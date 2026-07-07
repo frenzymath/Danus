@@ -1,0 +1,7 @@
+interface:
+  display_name: "Verify Proof"
+  short_description: "Verify a result and write it as a fact via fact_submit"
+  default_prompt: "Use $verify-proof to verify a result and, on acceptance, write it as a fact via fact_submit (glossary-coverage check, verifier call, write-iff-accepted; the verification trace is auto-logged to global memory)."
+
+policy:
+  allow_implicit_invocation: true

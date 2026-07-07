@@ -1,0 +1,7 @@
+interface:
+  display_name: "Identify Key Failures"
+  short_description: "Summarize why plans failed"
+  default_prompt: "Use $identify-key-failures to synthesize the common stuck points across failed decomposition plans."
+
+policy:
+  allow_implicit_invocation: true

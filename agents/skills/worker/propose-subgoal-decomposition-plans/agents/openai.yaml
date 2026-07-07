@@ -1,0 +1,7 @@
+interface:
+  display_name: "Propose Decomposition Plans"
+  short_description: "Generate multiple subgoal plans"
+  default_prompt: "Use $propose-subgoal-decomposition-plans to propose several subgoal decomposition plans from the current information."
+
+policy:
+  allow_implicit_invocation: true

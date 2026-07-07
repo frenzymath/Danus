@@ -1,0 +1,13 @@
+# REVISION_LOG — <project>
+
+> Append-only. Every write-paper round (writer / reviser / reference auditor)
+> adds one entry: what it did, what it changed, what it left open. This is the
+> paper's durable history — read the last few entries before a new round.
+
+<!-- newest entries on top -->
+
+## <UTC timestamp> — <role: writer|reviser|reference-auditor>
+- **did:** <one-line summary of the round>
+- **changed:** <sections / theorems / bibliography touched>
+- **open / handed off:** <flags left for the next role, e.g. `\note{[cite/blocker] ...}`>
+- **compile:** <pass/fail + PDF size, from compile_verify.sh>

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# codex worker-binary wrapper. The codex *binary* is @openai/codex, provisioned
+# by scripts/bootstrap.sh; its exact path is written to runtime/runtime.env as
+# DANUS_NODE / DANUS_CODEX_JS. This wrapper keeps a single codex version on the
+# workers' PATH regardless of where it landed.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../scripts/env.sh" >/dev/null 2>&1
+if [ -z "${DANUS_NODE:-}" ] || [ -z "${DANUS_CODEX_JS:-}" ]; then
+  echo "codex not provisioned — run scripts/bootstrap.sh (sets DANUS_NODE/DANUS_CODEX_JS)" >&2
+  exit 127
+fi
+exec "$DANUS_NODE" "$DANUS_CODEX_JS" "$@"

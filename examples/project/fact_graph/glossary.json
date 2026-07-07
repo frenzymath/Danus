@@ -1,0 +1,3 @@
+{
+  "T(n)": "the sum of the first n positive integers, T(n) = 1 + 2 + ... + n"
+}

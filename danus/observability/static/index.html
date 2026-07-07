@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Danus dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div id="conn-banner" class="conn-banner" hidden>⚠ Cannot reach server — is <code>python -m danus.observability</code> running?</div>
+  <header class="header">
+    <h1>Danus</h1>
+    <span class="badge badge-version">fact graph + global memory</span>
+    <span id="project-badge" class="badge badge-project"></span>
+    <nav class="header-nav">
+      <a class="nav-link active" data-tab="overview">Overview</a>
+      <a class="nav-link" data-tab="graph">Fact Graph</a>
+      <a class="nav-link" data-tab="memory">Global Memory</a>
+    </nav>
+    <span id="refresh-note" class="refresh-note"></span>
+  </header>
+
+  <main class="main">
+    <!-- Overview -->
+    <section id="tab-overview" class="tab active">
+      <div id="ov-cards" class="cards"></div>
+      <div class="ov-grid">
+        <div class="panel"><div class="panel-h">Global-memory channels</div><div id="ov-channels" class="bars"></div></div>
+        <div class="panel"><div class="panel-h">Verifier verdicts</div><div id="ov-verdicts"></div></div>
+        <div class="panel"><div class="panel-h">Facts by author</div><div id="ov-authors" class="bars"></div></div>
+      </div>
+    </section>
+
+    <!-- Fact Graph -->
+    <section id="tab-graph" class="tab">
+      <div class="graph-wrap">
+        <div class="graph-toolbar">
+          <span class="muted">size + shade = dependency depth:</span>
+          <span class="legend">axiom</span>
+          <span style="width:130px;height:11px;border-radius:6px;display:inline-block;background:linear-gradient(90deg,hsl(248,50%,80%),hsl(248,76%,28%))"></span>
+          <span class="legend">deep result</span>
+          <span id="graph-stat" class="muted"></span>
+        </div>
+        <div id="graph" class="graph"></div>
+        <aside id="fact-detail" class="fact-detail">
+          <div class="muted">Click a node to inspect its statement, proof, and predecessors.</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Global Memory -->
+    <section id="tab-memory" class="tab">
+      <div id="mem-subtabs" class="subtabs"></div>
+      <div id="mem-list" class="mem-list"></div>
+    </section>
+  </main>
+
+  <script defer src="/static/app.js"></script>
+</body>
+</html>

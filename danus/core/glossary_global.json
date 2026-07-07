@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "description": "Global glossary for the Danus fact graph: universal math notation shared by ALL projects. A fact's symbols are 'defined' if they appear here, in the per-project fact_graph/glossary.json, in a cited predecessor's glossary_introduces, or in the fact's own glossary_introduces (precedence low->high). See DATA_MODEL.md §3.",
+  "terms": {
+    "Z+": {
+      "kind": "set",
+      "definition": "The set of positive integers {1, 2, 3, ...}.",
+      "aliases": ["positive integers", "Z_+", "Z>=1"]
+    },
+    "Z>=k": {
+      "kind": "set",
+      "definition": "The set of integers >= k, i.e. {k, k+1, k+2, ...}; concrete k must be substituted at the point of use (Z>=0 = nonnegative integers, Z>=2, etc.).",
+      "aliases": ["Z_{>=k}", "integers at least k"]
+    },
+    "Z": {
+      "kind": "set",
+      "definition": "The ring of integers {..., -2, -1, 0, 1, 2, ...}.",
+      "aliases": ["integers"]
+    },
+    "N": {
+      "kind": "set",
+      "definition": "The natural numbers. Convention: N starts at 0 unless restated locally; use Z+ for {1,2,3,...} when 1-based is required.",
+      "aliases": ["naturals"]
+    },
+    "Q": {
+      "kind": "set",
+      "definition": "The field of rational numbers.",
+      "aliases": ["rationals"]
+    },
+    "R": {
+      "kind": "set",
+      "definition": "The field of real numbers.",
+      "aliases": ["reals"]
+    },
+    "R+": {
+      "kind": "set",
+      "definition": "The set of strictly positive real numbers, i.e. {x in R : x > 0}.",
+      "aliases": ["R_+", "positive reals"]
+    },
+    "R>=0": {
+      "kind": "set",
+      "definition": "The set of nonnegative real numbers, i.e. {x in R : x >= 0}.",
+      "aliases": ["R_{>=0}", "nonnegative reals"]
+    },
+    "C": {
+      "kind": "set",
+      "definition": "The field of complex numbers.",
+      "aliases": ["complex numbers"]
+    },
+    "floor(x)": {
+      "kind": "function",
+      "definition": "For x in R, floor(x) is the unique integer n with n <= x < n+1.",
+      "aliases": ["lfloor x rfloor", "[x] (when context is integer part, but prefer floor)"]
+    },
+    "ceil(x)": {
+      "kind": "function",
+      "definition": "For x in R, ceil(x) is the unique integer n with n-1 < x <= n.",
+      "aliases": ["lceil x rceil"]
+    },
+    "{x}": {
+      "kind": "function",
+      "definition": "Fractional part: for x in R, {x} = x - floor(x); equivalently, the unique element of [0,1) congruent to x mod 1.",
+      "aliases": ["frac(x)", "fractional part"]
+    },
+    "gcd": {
+      "kind": "function",
+      "definition": "gcd(a, b) is the greatest common divisor of integers a, b (with gcd(0, 0) = 0 by convention).",
+      "aliases": ["greatest common divisor"]
+    },
+    "lcm": {
+      "kind": "function",
+      "definition": "lcm(a, b) is the least common multiple of integers a, b (with lcm(a, 0) = 0).",
+      "aliases": ["least common multiple"]
+    },
+    "mod": {
+      "kind": "operator",
+      "definition": "a mod b (for b != 0) is the unique nonnegative integer r with 0 <= r < |b| and a = qb + r for some integer q.",
+      "aliases": ["modulo"]
+    },
+    "divides": {
+      "kind": "predicate",
+      "definition": "For integers a, b, 'a divides b' (a | b) means there exists an integer k with b = ka.",
+      "aliases": ["|", "is a divisor of"]
+    },
+    "[a,b]": {
+      "kind": "set",
+      "definition": "Closed real interval {x in R : a <= x <= b}. When a, b are integers and the integer interval is meant, restate explicitly as 'integer interval' or use {a, a+1, ..., b}.",
+      "aliases": ["closed interval"]
+    },
+    "(a,b)": {
+      "kind": "set",
+      "definition": "Open real interval {x in R : a < x < b}.",
+      "aliases": ["open interval"]
+    },
+    "[a,b)": {
+      "kind": "set",
+      "definition": "Half-open real interval {x in R : a <= x < b}.",
+      "aliases": ["half-open interval (left-closed)"]
+    },
+    "(a,b]": {
+      "kind": "set",
+      "definition": "Half-open real interval {x in R : a < x <= b}.",
+      "aliases": ["half-open interval (right-closed)"]
+    },
+    "iff": {
+      "kind": "logical",
+      "definition": "If and only if; logical biconditional.",
+      "aliases": ["<=>"]
+    },
+    "sgn(x)": {
+      "kind": "function",
+      "definition": "Sign function: sgn(x) = 1 if x > 0, 0 if x = 0, -1 if x < 0.",
+      "aliases": ["sign"]
+    },
+    "epsilon": {
+      "kind": "parameter",
+      "definition": "Conventional name for a small real parameter; introduce with an explicit range, e.g. 'let epsilon in (0, 1/Q)'.",
+      "aliases": ["eps", "ε"]
+    },
+    "eta": {
+      "kind": "parameter-or-point",
+      "definition": "Two standard meanings, disambiguated by context: (i) a small positive real parameter (use with explicit range like 'eta in R+, eta < ...'); (ii) the generic point of an integral scheme.",
+      "aliases": ["η"]
+    },
+    "delta": {
+      "kind": "parameter",
+      "definition": "Conventional name for a (small or fixed) real parameter; introduce with an explicit value or range (e.g. 'put delta := deg_C(f^* T_{X/B}) > 0').",
+      "aliases": ["δ"]
+    },
+    "lambda": {
+      "kind": "parameter",
+      "definition": "Conventional name for a real or complex parameter / scalar / eigenvalue; introduce with an explicit type (e.g. 'lambda in R+', 'lambda an eigenvalue of A').",
+      "aliases": ["λ"]
+    },
+    "mu": {
+      "kind": "function-or-parameter",
+      "definition": "Standard meanings include (i) the slope mu(E) := deg(E)/rk(E) of a coherent sheaf on a curve; (ii) a real parameter (introduce with range). Disambiguate by context at the point of use.",
+      "aliases": ["μ"]
+    },
+    "nu": {
+      "kind": "morphism-or-parameter",
+      "definition": "Conventional name for a finite covering morphism (e.g. nu : B -> C of degree e), or for a normalization morphism, or sometimes for a real parameter; introduce with the specific role at point of use.",
+      "aliases": ["ν"]
+    },
+    "rho": {
+      "kind": "morphism",
+      "definition": "Conventional name for a structure morphism, projection, or scheme map (e.g. rho : W -> B). Introduce the source, target, and any extra structure (projective, dominant, smooth, ...) at the point of use.",
+      "aliases": ["ρ"]
+    },
+    "sigma": {
+      "kind": "morphism",
+      "definition": "Conventional name for a section of a morphism (e.g. sigma : B -> W is a section of rho : W -> B), or sometimes for a permutation. Introduce the role and source/target at the point of use.",
+      "aliases": ["σ"]
+    },
+    "phi": {
+      "kind": "morphism",
+      "definition": "Conventional name for a morphism between schemes / varieties (e.g. phi : W -> X). Introduce source, target, and any further structure at the point of use.",
+      "aliases": ["φ", "ϕ"]
+    },
+    "pi": {
+      "kind": "morphism-or-constant",
+      "definition": "Two standard meanings, disambiguated by context: (i) a structural morphism (e.g. pi : X -> B is a projection or projective morphism); (ii) Archimedes' constant pi = 3.14... in analysis. Introduce the role at the point of use.",
+      "aliases": ["π"]
+    },
+    "tau": {
+      "kind": "morphism",
+      "definition": "Conventional name for a stabilization morphism (Kontsevich), a transposition / permutation, or another auxiliary map. Introduce the role at the point of use.",
+      "aliases": ["τ"]
+    },
+    "Phi": {
+      "kind": "morphism",
+      "definition": "Capital phi; conventional name for a Frobenius-type morphism (e.g. geometric Frobenius Phi_m : C_m -> C of degree p^m), or a more general system of morphisms. Introduce the role at the point of use.",
+      "aliases": ["Φ"]
+    },
+    "Pi": {
+      "kind": "operator-or-product",
+      "definition": "Capital pi; conventional name for a product (Pi_{i in I} a_i), a projection, or another structural map / scheme. Disambiguate at the point of use.",
+      "aliases": ["Π"]
+    },
+    "Sigma": {
+      "kind": "set-or-curve",
+      "definition": "Capital sigma; conventional name for a sum, a set, or in algebraic geometry an irreducible curve in a variety (often a rational curve produced by bend-and-break). Disambiguate at the point of use.",
+      "aliases": ["Σ"]
+    },
+    "Gamma": {
+      "kind": "graph-or-curve",
+      "definition": "Capital gamma; conventional name for a graph (e.g. dual graph of a nodal curve), a curve, or a discrete group. Disambiguate at the point of use.",
+      "aliases": ["Γ"]
+    },
+    "chi": {
+      "kind": "function",
+      "definition": "Euler characteristic: for a coherent sheaf F on a projective scheme Y, chi(Y, F) := sum_i (-1)^i h^i(Y, F). On a smooth projective curve C of genus g, chi(C, E) = deg E + rk(E)(1 - g) for a vector bundle E (Riemann-Roch).",
+      "aliases": ["Euler characteristic", "χ"]
+    },
+    "h^i": {
+      "kind": "function",
+      "definition": "Sheaf cohomology dimension: h^i(Y, F) := dim_k H^i(Y, F) for a coherent sheaf F on a projective k-scheme Y.",
+      "aliases": ["h^0", "h^1", "h^i(Y, F)", "cohomology dimension"]
+    },
+    "X_b": {
+      "kind": "scheme",
+      "definition": "Schematic fiber of a morphism rho : X -> B over a point b in B; defined as X x_B Spec(k(b)) (or X x_B {b} when b is a closed point of B).",
+      "aliases": ["fiber over b", "X_y"]
+    },
+    "O_{Y,y}": {
+      "kind": "ring",
+      "definition": "Local ring of a scheme Y at a point y; the stalk of the structure sheaf O_Y at y. For a smooth curve B and a closed point b in B, O_{B,b} is a DVR.",
+      "aliases": ["local ring", "stalk"]
+    },
+    "T_Y": {
+      "kind": "sheaf",
+      "definition": "Tangent sheaf of a scheme Y; on the smooth locus it is a vector bundle of rank dim Y. For a morphism Y -> Z it makes sense to talk about the relative tangent T_{Y/Z}.",
+      "aliases": ["tangent sheaf", "tangent bundle"]
+    },
+    "T_{Y/Z}": {
+      "kind": "sheaf",
+      "definition": "Relative tangent sheaf for a morphism Y -> Z; on the smooth locus of the morphism it is a vector bundle of rank dim Y - dim Z.",
+      "aliases": ["relative tangent"]
+    }
+  }
+}

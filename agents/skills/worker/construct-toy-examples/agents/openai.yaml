@@ -1,0 +1,7 @@
+interface:
+  display_name: "Construct Toy Examples"
+  short_description: "Use simple examples to guide proof search"
+  default_prompt: "Use $construct-toy-examples to generate toy examples and log patterns relevant to the active subgoal."
+
+policy:
+  allow_implicit_invocation: true

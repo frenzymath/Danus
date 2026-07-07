@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# danus-mcp — launches the danus gateway MCP server (role=main by default) for
+# Claude Code (.mcp.json) or any MCP client. Sources env so DANUS_AGENTS_ROOT
+# etc. are set.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../scripts/env.sh" >/dev/null 2>&1
+export DANUS_ROLE="${DANUS_ROLE:-main}"
+export DANUS_AUTHOR="${DANUS_AUTHOR:-main_agent}"
+exec "$DANUS_PY" -m danus.gateway "$@"

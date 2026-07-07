@@ -1,0 +1,7 @@
+interface:
+  display_name: "Obtain Immediate Conclusions"
+  short_description: "Extract direct consequences from claims"
+  default_prompt: "Use $obtain-immediate-conclusions to derive and log immediate consequences for the current theorem or subgoal."
+
+policy:
+  allow_implicit_invocation: true

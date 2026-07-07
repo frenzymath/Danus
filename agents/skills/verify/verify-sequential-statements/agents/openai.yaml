@@ -1,0 +1,7 @@
+interface:
+  display_name: "Verify Sequential Statements"
+  short_description: "Check markdown proof in order"
+  default_prompt: "Use $verify-sequential-statements to verify the markdown proof in order and log all critical errors and gaps."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,54 @@
+# PROJECT_BRIEF — <project>
+
+> Per-paper intent and constraints. Filled through a short interview with the
+> operator (the write-paper skill asks; you do not invent answers). The math
+> comes from the fact graph — this file is about framing, audience, and the
+> per-paper overrides, NOT the mathematics.
+
+## Title / working title
+<the paper's title>
+
+## Audience & venue
+<who reads it; target journal/arXiv category, e.g. math.XX>
+
+## Authors & affiliations
+<author list + affiliations; the acknowledgement boilerplate
+ (`boilerplate/acknowledgement.md`, operator-configurable) is added separately —
+ list only the human authors here. If left blank, the writer emits placeholder
+ `\author{}`/`\address{}`/`\email{}` for the operator to fill.>
+
+## Scope: what this paper claims
+<the main theorem(s) to foreground, in the operator's words; which verified facts
+ are the headline results vs. supporting lemmas>
+
+<!-- STRUCTURED FIELDS (machine-read by the write-paper skill — keep the
+     `field: value` shape on its own line; the prose above is for humans). -->
+
+## Target results (headline facts)
+headline_fact_ids: <space/comma-separated fact ids that ARE this paper's target
+ results, e.g. `fact_main_theorem`; leave the value blank to let the skill
+ auto-infer the deepest terminal facts>
+
+The paper is written from the transitive-predecessor CLOSURE of these targets
+(NOT every proven fact) and the reference ledger is seeded from the SAME closure,
+so the writer's facts and the bibliography agree. Blank = the skill guesses the
+deepest terminal facts (facts nothing else depends on) and records that it guessed.
+
+## Structural exemplar (optional)
+structural_exemplar: <the name of ONE folder under `style/anchors/` whose
+ STRUCTURE this paper should imitate; leave blank for none>
+
+Voice always comes from the unified STYLE_GUIDE (distilled across all anchors).
+This names the single anchor to imitate for STRUCTURE only; it is embedded iff it
+names an existing anchor folder. Blank = no structural exemplar (generic
+structure from PAPER_STRUCTURE.md).
+
+## Per-paper style overrides (override the global STYLE_GUIDE for THIS paper only)
+<anti-patterns / preferences specific to this paper; collaborator concerns. List
+ every per-paper rule explicitly — the agent will not infer them.>
+
+## Deadline / status
+<submission target, if any; draft vs. final>
+
+## Notes
+<anything else the writer/reviser must know>

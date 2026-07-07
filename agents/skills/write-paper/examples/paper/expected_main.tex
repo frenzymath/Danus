@@ -1,0 +1,119 @@
+\documentclass{amsart}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{cor}[thm]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+
+% Editorial macros (never define as no-ops; never drop).
+\newcommand{\edit}[1]{\textcolor{red}{#1}}
+\newcommand{\note}[1]{\textbf{[#1]}}
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
+
+\DeclareMathOperator{\Oddsum}{S}
+
+\title{The Sum of the First $n$ Odd Numbers}
+
+\author{A. Author}
+\address{Department of Example Studies, Example University}
+\email{a.author@example.edu}
+
+\author{B. Coauthor}
+\address{Institute for Placeholder Mathematics}
+\email{b.coauthor@example.org}
+
+\subjclass[2020]{11A25, 97F60}
+\keywords{odd numbers, partial sums, mathematical induction, perfect squares}
+\date{}
+
+\begin{document}
+
+\begin{abstract}
+We prove that the sum of the first $n$ positive odd numbers equals $n^2$ for every positive integer $n$. The argument is an induction comparing two one-step recurrences. The main result of this paper was obtained with the assistance of the Danus system, an automated proof-search and verification system.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}\label{sec:introduction}
+
+The partial sums of the positive odd numbers form one of the oldest examples in elementary number theory, and the identity recorded below is a standard first exercise in mathematical induction \cite{Exm20}. We give a short, self-contained proof that isolates the single ingredient the argument needs: a comparison of two sequences with equal initial value and equal one-step increments.
+
+For $n \ge 1$, write $\Oddsum(n) = 1 + 3 + 5 + \cdots + (2n-1)$ for the sum of the first $n$ positive odd numbers, with $\Oddsum(1) = 1$. Our result is the following.
+
+\begin{thm}\label{thm:main}
+For every integer $n \ge 1$,
+\[
+  \Oddsum(n) = n^2.
+\]
+\end{thm}
+
+We fix notation once. Throughout, $n$ denotes a positive integer, and $\Oddsum(n)$ is as defined above. We use no conventions beyond the elementary arithmetic of the integers.
+
+\section{Proof of Theorem~\ref{thm:main}}\label{sec:proof}
+
+We first record two one-step recurrences, then compare them by induction.
+
+\begin{lem}\label{lem:odd-recurrence}
+For every integer $n \ge 1$, $\Oddsum(n+1) = \Oddsum(n) + (2n+1)$.
+\end{lem}
+
+\begin{proof}
+By definition $\Oddsum(n) = \sum_{k=1}^{n} (2k-1)$. The $(n+1)$-st positive odd number is $2(n+1)-1 = 2n+1$, so
+\[
+  \Oddsum(n+1) = \sum_{k=1}^{n+1} (2k-1) = \left( \sum_{k=1}^{n} (2k-1) \right) + (2n+1) = \Oddsum(n) + (2n+1).
+\]
+This is the telescoping relation between consecutive partial sums \cite{AC24}.
+\end{proof}
+
+\begin{lem}\label{lem:square-recurrence}
+For every integer $n \ge 1$, $(n+1)^2 = n^2 + (2n+1)$.
+\end{lem}
+
+\begin{proof}
+Expanding the square, $(n+1)^2 = n^2 + 2n + 1 = n^2 + (2n+1)$.
+\end{proof}
+
+We now prove Theorem~\ref{thm:main}.
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+We argue by induction on $n$, in the form recalled in \cite[Section~1]{Exm20}.
+
+\noindent\textbf{Step 1.} The base case holds. For $n = 1$ we have $\Oddsum(1) = 1 = 1^2$.
+
+\noindent\textbf{Step 2.} The inductive step holds. Suppose $\Oddsum(n) = n^2$ for some $n \ge 1$. By Lemma~\ref{lem:odd-recurrence}, $\Oddsum(n+1) = \Oddsum(n) + (2n+1)$, and substituting the inductive hypothesis gives $\Oddsum(n+1) = n^2 + (2n+1)$. By Lemma~\ref{lem:square-recurrence}, $n^2 + (2n+1) = (n+1)^2$. Hence $\Oddsum(n+1) = (n+1)^2$.
+
+By induction, $\Oddsum(n) = n^2$ for every $n \ge 1$.
+\end{proof}
+
+\begin{rem}
+The main result of this paper was obtained with the assistance of the Danus system, an automated proof-search and verification system. Because automated systems have limitations, it is possible that we have missed related references in the literature, and we welcome comments from experts.
+\end{rem}
+
+\begin{thebibliography}{99}
+
+\bibitem[AC24]{AC24}
+A. Author and B. Coauthor,
+\emph{A note on telescoping sums},
+J. Example Math. (2024).
+
+\bibitem[Exm20]{Exm20}
+C. Example,
+\emph{Elementary induction, revisited},
+Example Lecture Notes (2020).
+
+\end{thebibliography}
+
+\end{document}

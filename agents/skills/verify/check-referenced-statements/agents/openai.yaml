@@ -1,0 +1,7 @@
+interface:
+  display_name: "Check Referenced Statements"
+  short_description: "Validate external theorem citations"
+  default_prompt: "Use $check-referenced-statements to verify each external citation with arXiv theorem search first, then web search fallback."
+
+policy:
+  allow_implicit_invocation: true

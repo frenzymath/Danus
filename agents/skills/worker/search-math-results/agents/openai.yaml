@@ -1,0 +1,7 @@
+interface:
+  display_name: "Search Math Results"
+  short_description: "Find relevant results and background"
+  default_prompt: "Use $search-math-results to retrieve relevant theorems, constructions, examples, counterexamples, or background for the current statement."
+
+policy:
+  allow_implicit_invocation: true

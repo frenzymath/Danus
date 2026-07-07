@@ -1,0 +1,7 @@
+interface:
+  display_name: "Construct Counterexamples"
+  short_description: "Refute fragile assumptions and branches"
+  default_prompt: "Use $construct-counterexamples to test current claims and record branch-impacting refutations."
+
+policy:
+  allow_implicit_invocation: true

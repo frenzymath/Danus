@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# consult — strategic consult (gpt_pro | claude | off transport per config).
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../scripts/env.sh"
+exec "$DANUS_PY" -m danus.strategy "$@"

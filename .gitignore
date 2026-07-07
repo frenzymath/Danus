@@ -1,0 +1,68 @@
+# --- Python caches ---
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Build / packaging artifacts (from `pip install -e .`) ---
+build/
+dist/
+*.egg-info/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Editor / OS files ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Secrets & local config (NEVER commit) ---
+# write-paper push driver reads its git token from here; templates (*.example) ARE committed.
+config/latex-git.env
+config/*.env
+!config/*.env.example
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_ed25519
+id_rsa
+
+# --- write-paper: operator's own (BYO) style anchor papers are local-only ---
+# Keep the directory + its README, ignore any dropped-in papers.
+agents/skills/write-paper/style/anchors/*
+!agents/skills/write-paper/style/anchors/README.md
+
+# --- LaTeX build artifacts ---
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.log
+
+# --- Per-project generated paper workspaces / runtime ---
+runtime/
+# write-paper per-call diagnostic run logs (no leading slash: matches at any depth)
+paper/.runs/
+.coverage
+.cov_*
+
+# verify agent home — provisioned on service start (launcher.ensure_agent_home)
+danus/verify/agent/
+
+# node deps provisioned by bootstrap.sh (human-summary PDF render: markdown-it/katex)
+.claude/skills/human-summary/node_modules/
+.claude/skills/human-summary/package-lock.json

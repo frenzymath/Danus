@@ -1,0 +1,7 @@
+interface:
+  display_name: "Direct Proving"
+  short_description: "Quickly screen a plan"
+  default_prompt: "Use $direct-proving to first try all subgoals in a decomposition plan directly, using search results, examples, counterexamples, and proof adaptations where relevant, then identify the key stuck points and migration failures if the plan does not fully go through."
+
+policy:
+  allow_implicit_invocation: true
