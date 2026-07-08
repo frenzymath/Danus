@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use Danus, please cite the paper below."
+title: "Danus"
+repository-code: "https://github.com/frenzymath/Danus"
+license: Apache-2.0
+preferred-citation:
+  type: generic
+  title: "Danus: Orchestrating Mathematical Reasoning Agents with Fact-Graph Memory"
+  year: 2026
+  url: "https://arxiv.org/abs/2607.06447"
+  identifiers:
+    - type: other
+      value: "arXiv:2607.06447"
+  authors:
+    - family-names: Liu
+      given-names: Jihao
+    - family-names: Gao
+      given-names: Guoxiong
+    - family-names: Sun
+      given-names: Zeming
+    - family-names: Wu
+      given-names: Bin
+    - family-names: Liu
+      given-names: Shurui
+    - family-names: Jiang
+      given-names: Jiedong
+    - family-names: Ju
+      given-names: Haocheng
+    - family-names: Chen
+      given-names: Leheng
+    - family-names: Cheng
+      given-names: Ronnie
+    - family-names: Zhang
+      given-names: Xiping
+    - family-names: Dong
+      given-names: Bin

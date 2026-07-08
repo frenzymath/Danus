@@ -1,6 +1,7 @@
-# Danus
+# Danus: Orchestrating Mathematical Reasoning Agents with Fact-Graph Memory
 
 <p align="center">
+  <a href="https://arxiv.org/abs/2607.06447"><img src="https://img.shields.io/badge/arXiv-2607.06447-b31b1b" alt="Danus paper on arXiv"></a>
   <a href="https://frenzymath.com/blog/danus/"><img src="https://img.shields.io/badge/Technical%20Report-frenzymath.com-1f6feb" alt="Technical report"></a>
   <a href="https://github.com/frenzymath/Rethlas"><img src="https://img.shields.io/badge/Rethlas-GitHub-181717?logo=github" alt="Rethlas on GitHub"></a>
   <a href="https://www.xiaohongshu.com/discovery/item/6a4da1ba00000000070201ef?source=webshare&xhsshare=pc_web&xsec_token=ABfiiMB7yyB-dW_hMzh3MW7ZRG2ddm5in_wBnBALXO6DE=&xsec_source=pc_share"><img src="https://img.shields.io/badge/rednote-%E5%B0%8F%E7%BA%A2%E4%B9%A6-FF2442?logo=xiaohongshu&logoColor=white" alt="rednote (Xiaohongshu) post"></a>
@@ -18,7 +19,8 @@ answer, Danus renders it into a human report or a publishable LaTeX paper.
 Danus builds on the worker–verifier core of our earlier system
 [Rethlas](https://github.com/frenzymath/Rethlas)
 ([arXiv:2604.03789](https://arxiv.org/abs/2604.03789)). The
-[technical report](https://frenzymath.com/blog/danus/) tells the full story:
+[paper](https://arxiv.org/abs/2607.06447) and the
+[technical report](https://frenzymath.com/blog/danus/) tell the full story:
 the system, six research-level case studies it resolved, and what we learned
 along the way.
 
