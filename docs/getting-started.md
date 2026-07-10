@@ -104,7 +104,7 @@ soft, write-paper-only dependency):
 
 ```
 == Danus doctor ==
-DANUS_ROOT=/home/you/danus/oss
+DANUS_ROOT=/home/you/Danus
   ok   config/danus.env present
   ok   config/codex.env present
   ok   python: .../runtime/venv/bin/python

@@ -5,7 +5,7 @@
 # =============================================================================
 # main-agent-tmux.sh — run Claude Code as a resident main agent inside tmux.
 #
-# This is the ONLY unattended mode in OSS Danus: a long-lived Claude Code
+# This is the ONLY unattended mode in Danus: a long-lived Claude Code
 # session in the repo root. Because it starts in DANUS_ROOT it inherits the
 # repo's CLAUDE.md, its skills, and .mcp.json — and .mcp.json is what wires the
 # gateway MCP server (`python -m danus.gateway` via bin/danus-mcp). This script

@@ -1,7 +1,7 @@
 """Consult transports — the abstract gateway + the OpenAI-compatible API impl.
 
 A ``Transport`` takes a prompt and returns a uniform JSON envelope (see
-``shape_envelope``). ``GptProTransport`` is the OSS default: it drives an
+``shape_envelope``). ``GptProTransport`` is the default: it drives an
 OpenAI-compatible **Responses** API in ``background=True, stream=True`` mode
 (required — a synchronous xhigh call hangs the proxy) and steps its params down
 only on a 400. ``OffTransport`` short-circuits to a disabled result.
@@ -130,7 +130,7 @@ class OffTransport(Transport):
 
 
 class GptProTransport(Transport):
-    """OpenAI-compatible Responses transport (OSS default).
+    """OpenAI-compatible Responses transport (the default).
 
     ``client_factory`` lets tests inject a stub client without a real OpenAI
     package or network; production builds it from the config.

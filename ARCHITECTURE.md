@@ -36,7 +36,7 @@ output: write-paper (publication) · human-summary (progress report) — each re
 ## 2. Folder layout
 
 ```
-oss/
+Danus/
 ├─ ARCHITECTURE.md              this file (map + invariants + interface contract)
 ├─ README.md   pyproject.toml   top-level intro + the installable `danus` package
 ├─ .gitignore  .mcp.json        MCP wiring: the `danus` gateway + the `write-paper` and `human-summary` services

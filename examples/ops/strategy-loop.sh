@@ -8,7 +8,7 @@
 # Mechanizes the CADENCE of a strategic consult, nothing more. Each beat it
 # calls the consult CLI (bin/consult) on the project's current elaboration and
 # writes the reply to a file. It deliberately does NOT record master_guidance
-# or dispatch workers: in OSS the elaborate -> consult -> record-master_guidance
+# or dispatch workers: the elaborate -> consult -> record-master_guidance
 # -> dispatch chain is owned by the resident Claude-Code main agent and its
 # `elaboration` / `consult` skills (recording is a gm_add through the
 # gateway, which keeps the global-memory kinds + role gating intact). This shell
@@ -24,7 +24,7 @@
 # Env:
 #   DANUS_STRATEGY_BEAT   seconds between consults (default 7200 = ~2h; the
 #                         skill's guidance is at most once every ~2h)
-#   DANUS_CONSULT_TRANSPORT   gpt_pro | claude_api | claude_code | off (never web/auto in OSS; default gpt_pro)
+#   DANUS_CONSULT_TRANSPORT   gpt_pro | claude_api | claude_code | off (default gpt_pro)
 # =============================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,7 +56,7 @@ while :; do
     STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
     REPLY="$OUTDIR/reply-$STAMP.md"
     echo "[strategy-loop] consult ($TRANSPORT) -> $REPLY"
-    # Uses the OSS name `consult` (bin/consult -> python -m danus.strategy).
+    # Uses the `consult` CLI (bin/consult -> python -m danus.strategy).
     consult --file "$ELAB" --project "$PROJDIR" --out "$REPLY" \
             --transport "$TRANSPORT" || echo "[strategy-loop] consult failed (continuing)"
     # NOTE: a real deployment records this reply as master_guidance via the

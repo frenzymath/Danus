@@ -51,7 +51,7 @@ returns whatever the agent wrote; it does not recompute the verdict.
 python -m danus.verify          # 127.0.0.1:8091, default CODEX_TIMEOUT_SECONDS=900
 ```
 
-Binds **loopback by default** (safer OSS default; set `VERIFY_HOST=0.0.0.0` if the
+Binds **loopback by default** (set `VERIFY_HOST=0.0.0.0` if the
 gateway runs on another host). Needs a codex CLI: set **`DANUS_CODEX_BIN`** (or
 `codex` on PATH / the repo's `bin/codex` wrapper) and
 an account via `CODEX_HOME` — **there is no built-in fallback path** (BYO). The

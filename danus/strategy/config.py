@@ -87,7 +87,7 @@ def load_config() -> ConsultConfig:
 
 def resolve_transport(cli_value: str | None) -> str:
     """Pick the transport: explicit CLI flag > ``DANUS_CONSULT_TRANSPORT`` env
-    > ``gpt_pro`` (the OSS default / core direction-guidance path).
+    > ``gpt_pro`` (the default / core direction-guidance path).
 
     Recognized transports: ``gpt_pro`` (paid OpenAI-compatible), ``claude_api``
     (paid Anthropic API, native SDK), ``claude_code`` (the Claude Code CLI via

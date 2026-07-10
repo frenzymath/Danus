@@ -3,10 +3,9 @@
 # Read-only; never fails hard. Reports whether the PDF-render prerequisites are
 # present: node, a headless Chrome/Chromium binary, and the vendored KaTeX CSS.
 #
-# The render dep is a headless Chrome BINARY for --print-to-pdf. This is NOT the
-# consult browser stack (which OSS drops) — it is only used locally to snapshot
-# KaTeX-rendered HTML to PDF. The ops layer (scripts/env.sh + scripts/doctor.sh)
-# should export/soft-check DANUS_CHROME_BIN alongside this skill.
+# The render dep is a headless Chrome BINARY for --print-to-pdf — it is only used
+# locally to snapshot KaTeX-rendered HTML to PDF. The ops layer (scripts/env.sh +
+# scripts/doctor.sh) should export/soft-check DANUS_CHROME_BIN alongside this skill.
 #
 #   bash doctor.sh
 set -u

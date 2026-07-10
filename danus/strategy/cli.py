@@ -71,7 +71,7 @@ def _build_parser() -> argparse.ArgumentParser:
                     help="override the consult model (api: any OpenAI-compatible id; "
                     "claude_api/claude_code: any Claude model, e.g. claude-fable-5 / claude-opus-4-8)")
     ap.add_argument("--transport", choices=["gpt_pro", "claude_api", "claude_code", "off"], default=None,
-                    help="gpt_pro (OSS default, paid OpenAI-compatible), claude_api "
+                    help="gpt_pro (the default, paid OpenAI-compatible), claude_api "
                     "(paid Anthropic API, BYO key), claude_code (your Claude "
                     "subscription via the Claude Code CLI), or off (no-op short-circuit); "
                     "falls back to $DANUS_CONSULT_TRANSPORT then gpt_pro")

@@ -68,7 +68,7 @@ def repo_root() -> Path:
 
 def agents_root() -> Path:
     """Where projects live. Override with ``DANUS_AGENTS_ROOT``; defaults to
-    ``runtime/projects`` under the current working directory (OSS default)."""
+    ``runtime/projects`` under the current working directory."""
     env = os.environ.get("DANUS_AGENTS_ROOT")
     if env:
         return Path(env).resolve()

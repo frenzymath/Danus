@@ -55,7 +55,7 @@ bash scripts/check-codex.sh     # one live codex ping + scan recent logs for API
 
   ```
   == Danus doctor ==
-  DANUS_ROOT=/home/you/danus/oss
+  DANUS_ROOT=/home/you/Danus
     ok   config/danus.env present
     ok   config/codex.env present
     ok   python: .../runtime/venv/bin/python
