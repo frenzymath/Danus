@@ -157,6 +157,9 @@ def build_codex_command(run_id: str, statement: str, proof: str) -> List[str]:
     return codex.exec_cmd(
         codex.resolve_bin(), _model(), _effort(),
         "-C", str(_agent_home()),
+        # on an install without .git (tarball download), codex's
+        # trusted-directory check refuses to run (exit 1 → /verify HTTP 500)
+        "--skip-git-repo-check",
         "-c", _mcp_config_arg(),
         "--dangerously-bypass-approvals-and-sandbox",
         build_prompt(run_id=run_id, statement=statement, proof=proof),

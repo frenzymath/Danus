@@ -135,6 +135,9 @@ def run_round(wl: L.WorkerLayout, role: dict, prompt: str, log_path: Path,
     cmd = codex.exec_cmd(
         codex_bin, role["MODEL"], role["REASONING_EFFORT"],
         "-C", str(wdir),
+        # on an install without .git (tarball download), codex's
+        # trusted-directory check refuses to run the worker round
+        "--skip-git-repo-check",
         "--dangerously-bypass-approvals-and-sandbox",
         prompt,
     )
