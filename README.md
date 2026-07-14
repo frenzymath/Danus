@@ -116,6 +116,14 @@ backend; the strategy consult runs on a top-tier reasoning model over the `gpt_p
 transport (paid), `claude_api` (the Anthropic API, per-token), or `claude_code`
 (your Claude subscription), or `off` to skip it.
 
+**Notes**
+
+- **Give the writing system a few exemplar papers.** Out of the box, `write-paper`
+  produces a complete, compilable paper, but the prose can read like a stack of
+  verified facts. In our experience the single highest-leverage fix is to provide
+  a few papers of your own as exemplars when you ask for the write-up — the writer
+  imitates them, and readability improves substantially.
+
 ## Design invariants (see ARCHITECTURE.md §3)
 
 - Three memory tiers, one correctness boundary: only the verifier-gated fact graph
