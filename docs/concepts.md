@@ -125,7 +125,10 @@ initialize ─▶ new project ─▶ strategy loop ⇄ worker swarm ─▶ verif
 - **human-summary** — a private PDF progress report rendered from the verified
   results; run it at **any time** during the run (it is not gated on finalize).
 - **finalize** — *you* decide a verified fact is the answer (`danus finalize`).
-  Danus does not decide "done" on its own — that judgment is surfaced to you.
+  Danus does not decide "done" on its own — that judgment is surfaced to you. (When
+  the main agent judges every target proved, it does stop the swarm's exploration on
+  its own to save compute, then asks you to confirm the answer; `danus start`
+  resumes exploration if you disagree.)
 - **write-paper** — after finalize: render the target's verified facts into a
   publishable paper, re-verified as written — the whole document, through a
   dedicated paper-math verifier — before delivery.

@@ -81,8 +81,10 @@ graph is the single verifier-gated source of truth.
 ## 4. Decide the answer — `danus finalize`
 
 Danus does **not** declare a problem "done" on its own; that is a mathematical
-judgment it surfaces to **you**. When the main agent believes a verified fact
-answers the goal, it says so and asks you to confirm. On your yes:
+judgment it surfaces to **you**. When the main agent judges every target proved and
+the route credible, it **stops the swarm's exploration immediately** (to save
+compute — `danus start` resumes it if you disagree), then says so and asks you to
+confirm the answer. On your yes:
 
 ```bash
 danus finalize <project> <fact_id> [<fact_id> …]
@@ -90,7 +92,8 @@ danus finalize <project> <fact_id> [<fact_id> …]
 
 This records the approved target theorem(s) in `TARGET.md` (what write-paper reads).
 `danus finalize <project>` with **no id** prints candidate terminal facts as
-suggestions. `finalize` only records — it does not stop the workers.
+suggestions. `finalize` itself only records — the swarm was already stopped above
+(on judged completion); `finalize` does not touch the workers.
 
 ## 5. Render the output
 

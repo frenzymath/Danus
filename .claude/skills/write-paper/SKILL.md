@@ -386,8 +386,11 @@ paper_write(project=<project>, headline=[<target fact ids>], paper_id=<paper_id|
   Voice always comes from the unified `STYLE_GUIDE.md`.
 - **`paper_write` does NOT stop the worker swarm by default** — entering
   write-paper does not always mean the whole problem is proven; a *partial* result
-  can be written up while the swarm keeps exploring the rest. **You (the main agent)
-  decide:** at the start of write-paper (Stage 0) surface the fork to the operator
+  can be written up while the swarm keeps exploring the rest. **If you already
+  stopped the swarm because the whole problem is proved** (the completion rule in
+  `CLAUDE.md` / the main-agent contract), this fork is moot — the swarm is already
+  down; just write the paper. **Otherwise (a partial result, exploration ongoing),
+  you decide:** at the start of write-paper (Stage 0) surface the fork to the operator
   — *"Start the paper — stop the swarm's exploration, or keep it running? (A partial
   result can be written up while the swarm keeps proving the rest.)"* On **stop** →
   call `paper_write(stop_workers=True)` (or `danus stop <project>`); on **keep** →

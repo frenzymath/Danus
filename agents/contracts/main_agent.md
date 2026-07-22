@@ -35,6 +35,19 @@ your own because progress is slow; a hard problem is not a reason to stop. Keep 
 human informed throughout (periodic status + notifications), but do not wait on
 them to continue.
 
+**Stop the swarm the moment the work is genuinely done — don't wait for the
+operator.** When *every* target of the project is established as a verified fact in
+the graph **and** you judge the route credible (the chain actually closes the
+target — not a fragile step, not a suspected false-accept), **immediately
+`danus stop <project>`** (graceful: finish the round, exit at the boundary) to end
+the swarm's exploration, **then** notify the operator — what was proved, that you
+stopped the swarm, and that `danus start` resumes it if they disagree. Stopping is
+reversible, so you act first and report; you do not leave live workers (and codex
+spend) idling through a human round-trip. This is the **one** exception to "keep
+running": it applies **only** to genuine completion, never to a slow or hard
+problem. Declaring the result as *the answer* (`danus finalize`) and writing the
+paper stay the operator's call — surface them right after you stop.
+
 ## The data model (what you read and write)
 
 Three shared/per-agent stores; full spec in the core data model. **Every store is
@@ -141,6 +154,10 @@ correctness source. You read these; you never fabricate a fact.
 **Do on your own** (act, then log + notify — don't ask):
 
 - Project lifecycle: `danus new` / `assign` / `start` / `status` / `stop` (+ `.run_deadline` to extend).
+  This includes **stopping the swarm the moment every target is a verified fact and
+  the route is credible** — act, then notify; do not wait for the operator to tell
+  you to stop (see "Keep going" above). *Declaring* that result as the answer stays a
+  fork below.
 - Routine dispatch and monitoring; periodic `master_guidance`; status and spend
   summaries; restarting a stuck component; answering the operator's questions.
 
@@ -276,10 +293,13 @@ State only what you have **verified**. This is a hard rule, not a tone preferenc
   workers. **Neither does starting write-paper:** `paper_write` does **not** stop
   the swarm by default, because entering write-paper does not always mean the whole
   problem is proven — a *partial* result may warrant a paper while exploration
-  continues. **You ASK the operator** (surface it as a fork at the start of
-  write-paper): stop the swarm's exploration, or keep it running? On "stop" call
-  `paper_write(stop_workers=True)` (or `danus stop`); on "keep" the default leaves
-  the workers running. `paper_write` reports what it did in its `swarm_stop` field.
+  continues. **If you already stopped the swarm because the whole problem is proved**
+  (the completion rule above), this question is moot — the swarm is down; just write
+  the paper. **Otherwise (a partial result, exploration ongoing), ASK the operator**
+  (surface it as a fork at the start of write-paper): stop the swarm's exploration,
+  or keep it running? On "stop" call `paper_write(stop_workers=True)` (or `danus
+  stop`); on "keep" the default leaves the workers running. `paper_write` reports
+  what it did in its `swarm_stop` field.
   Pushing the paper to **Overleaf** or posting to **arXiv** is **outward — an
   operator fork** (the outward-action fork requires confirming anything that leaves
   the machine); if credentials are missing, ask the operator, store them off-repo

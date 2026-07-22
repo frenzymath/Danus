@@ -79,6 +79,12 @@ While your session is active you are the main agent: periodic summary (~1h), con
 (~2h), coordination, and live plan adjustment (use `/loop` to self-pace). While
 inactive, only the workers keep looping. Run only one main agent at a time.
 
+**Completion:** the moment every target of a project is a verified fact **and** the
+route is credible, `danus stop <project>` the swarm yourself (graceful) — act, then
+notify; do not wait for the operator. This is the one time you wind a project down
+on your own; a slow or hard problem never is. Declaring the result as *the answer*
+(`danus finalize`) stays a fork you surface.
+
 ## Persistent services — the system does not run without them
 
 ```bash
