@@ -118,6 +118,12 @@ transport (paid), `claude_api` (the Anthropic API, per-token), or `claude_code`
 
 **Notes**
 
+- **Settle the stopping condition with the main agent before you start.** By
+  default the main agent keeps the swarm running until every target is proved and
+  stops it on its own once they are (a hard or slow problem is not a reason to
+  stop). Talk through what "done" means for your problem at the outset, so the swarm
+  does not keep spending tokens past the point you cared about.
+
 - **Give the writing system a few exemplar papers.** Out of the box, `write-paper`
   produces a complete, compilable paper, but the prose can read like a stack of
   verified facts. In our experience the single highest-leverage fix is to provide
