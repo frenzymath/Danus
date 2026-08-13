@@ -6,8 +6,10 @@ OpenAI/Anthropic paths (each is selected by config; defaults stay as before):
 1. **MCP in the dsh web profile** — register the role-gated danus gateway (plus
    write-paper / human-summary) in a dsh profile so dsh sessions get the Danus
    orchestration tools (gm_add / gm_search / fact_search / fact_revoke /
-   search_arxiv_theorems). See `cordis.patch.yml.example` — paste the rows into
-   `$DSH_HOME/profiles/web/cordis.patch.yml` and restart the dsh web server.
+   search_arxiv_theorems). Run `bash scripts/apply-dsh-mcp.sh` (backs up the
+   current patch, writes the rows from `cordis.patch.yml.example`, validates
+   the composed profile, handshake-probes all three MCP servers), then restart
+   the dsh web server.
 2. **dsh codex backend** — `CODEX_BACKEND=dsh` (config/danus.env) turns every
    `codex exec` (worker rounds, the verify service, paper/report renderers)
    into one `dsh --profile headless` session on DeepSeek models, via
