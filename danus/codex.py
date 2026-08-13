@@ -11,6 +11,8 @@ All config is read at CALL time (never import time), so services stay
 testable/reconfigurable.
 
 Env contract (neutral defaults + back-compat aliases):
+  CODEX_BACKEND       exec backend: api | chatgpt (the codex CLI, default) | dsh
+                      (DeepSeek Harness headless via bin/codex-dsh)
   DANUS_CODEX_BIN     codex binary; back-compat alias: CODEX_BIN
   DANUS_CODEX_MODEL   neutral default model (default "gpt-5.5")
   DANUS_CODEX_EFFORT  neutral default reasoning effort (default "xhigh")
@@ -36,30 +38,50 @@ DEFAULT_MODEL = "gpt-5.5"
 DEFAULT_EFFORT = "xhigh"
 
 
+def backend() -> str:
+    """The exec backend selected by ``CODEX_BACKEND`` at CALL time.
+
+    ``api`` / ``chatgpt`` (the default ``api``) both exec the codex
+    CLI — they differ only in how codex authenticates, which the CLI itself
+    decides. ``dsh`` execs DeepSeek Harness headless sessions instead, via
+    the ``bin/codex-dsh`` shim (one ``dsh --profile headless`` run per
+    ``codex exec`` call; the same argv + exit-code contract).
+    """
+    return (os.environ.get("CODEX_BACKEND") or "api").strip().lower()
+
+
+def _resolve_override(override: str) -> str:
+    """An absolute ``DANUS_CODEX_BIN`` override is used as-is; a
+    bare/relative name is resolved to its absolute path via PATH so
+    subprocess_env can prepend its dir for the ``#!/usr/bin/env node``
+    shebang. Falls back to the raw override (exec then surfaces a clear
+    FileNotFoundError)."""
+    if os.path.isabs(override):
+        return override
+    return shutil.which(override) or override
+
+
 def resolve_bin() -> str:
-    """Resolve the codex binary at CALL time. Precedence:
+    """Resolve the exec binary at CALL time. Precedence:
       1. ``DANUS_CODEX_BIN`` env,
-      2. ``<repo>/bin/codex`` wrapper if it exists,
-      3. ``shutil.which("codex")``,
-      4. the bare string ``"codex"`` (so a missing binary raises a clear
-         FileNotFoundError at exec time, not import time).
+      2. the backend's binary — ``<repo>/bin/codex-dsh`` when
+         ``CODEX_BACKEND=dsh``, else ``<repo>/bin/codex`` if it exists,
+      3. ``shutil.which("codex")`` (or ``"codex-dsh"``),
+      4. the bare string ``"codex"`` / ``"codex-dsh"`` (so a missing
+         binary raises a clear FileNotFoundError at exec time, not import time).
     """
     override = os.environ.get("DANUS_CODEX_BIN")
     if override:
-        # An absolute override is used as-is; a bare/relative name is resolved to
-        # its absolute path via PATH so subprocess_env can prepend its dir for the
-        # codex ``#!/usr/bin/env node`` shebang. Fall back to the raw override if
-        # it is not on PATH (exec then surfaces a clear FileNotFoundError).
-        if os.path.isabs(override):
-            return override
-        return shutil.which(override) or override
-    wrapper = _REPO_ROOT / "bin" / "codex"
+        return _resolve_override(override)
+    dsh = backend() == "dsh"
+    name = "codex-dsh" if dsh else "codex"
+    wrapper = _REPO_ROOT / "bin" / name
     if wrapper.exists():
         return str(wrapper)
-    which = shutil.which("codex")
+    which = shutil.which(name)
     if which:
         return which
-    return "codex"
+    return name
 
 
 def model(*override_env_names: str, default: str = DEFAULT_MODEL) -> str:
@@ -117,3 +139,31 @@ def exec_cmd(codex_bin: str, model: str, effort: str, *tail: str) -> List[str]:
         "--config", f'model_reasoning_effort="{effort}"',
         *tail,
     ]
+
+
+def dsh_context(prompt: str, *paths: Path) -> str:
+    """Embed a site's contract + skills into the prompt — for backend=``dsh``
+    only.
+
+    The codex CLI auto-loads ``AGENTS.md`` from the working dir and discovers
+    skills under ``.agents/skills``; DeepSeek Harness headless has neither, so
+    the same files are appended verbatim as a bounded context block. Any other
+    backend gets the prompt back unchanged (codex reads the files itself).
+    Files are embedded whole; directories contribute every ``SKILL.md`` under
+    them in sorted order.
+    """
+    if backend() != "dsh":
+        return prompt
+    blocks = [prompt]
+    for path in paths:
+        if path.is_file():
+            blocks.append(_dsh_block(path))
+        elif path.is_dir():
+            for skill in sorted(path.glob("**/SKILL.md")):
+                blocks.append(_dsh_block(skill))
+    return "\n\n".join(blocks)
+
+
+def _dsh_block(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    return f'<instructions name="{path.name}">\n{text}\n</instructions>'

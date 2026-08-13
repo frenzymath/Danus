@@ -1,0 +1,48 @@
+# Danus MCPs for a dsh profile — paste these rows into a profile's
+# cordis.patch.yml (e.g. $DSH_HOME/profiles/web/cordis.patch.yml), then restart
+# the dsh server. Replace <repo> with the absolute Danus checkout path.
+#
+# Tools appear under prefixed names: mcp__danus__gm_add, mcp__danus__gm_search,
+# mcp__danus__fact_search, mcp__danus__fact_revoke,
+# mcp__danus__search_arxiv_theorems, mcp__write-paper__*,
+# mcp__human-summary__*.
+- insert:
+    - id: mcp-danus
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: danus
+        command: '<repo>/bin/danus-mcp'
+        args: []
+        env:
+          DANUS_ROLE: 'main'
+          DANUS_AUTHOR: 'main_agent'
+        cwd: '<repo>'
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+    - id: mcp-write-paper
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: write-paper
+        command: '<repo>/bin/write-paper-mcp'
+        args: []
+        env:
+          DANUS_ROLE: 'main'
+          DANUS_AUTHOR: 'main_agent'
+        cwd: '<repo>'
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+    - id: mcp-human-summary
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: human-summary
+        command: '<repo>/bin/human-summary-mcp'
+        args: []
+        env:
+          DANUS_ROLE: 'main'
+          DANUS_AUTHOR: 'main_agent'
+        cwd: '<repo>'
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false

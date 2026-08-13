@@ -16,13 +16,16 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .config import (
-    ClaudeApiConfig, ConsultConfig,
+    ClaudeApiConfig, ConsultConfig, DshConfig,
     DEFAULT_CLAUDE_CODE_PRICE_IN, DEFAULT_CLAUDE_CODE_PRICE_OUT,
 )
 
@@ -686,3 +689,174 @@ class ClaudeApiTransport(Transport):
                 continue
         assert last is not None
         raise last
+
+
+# ---- dsh transport (DeepSeek Harness headless, the deployment's DeepSeek auth) --
+
+
+# DeepSeek's reasoning-effort enum is off | high | max (there are no low/medium
+# tiers); the consult CLI's scale collapses onto it: anything below high -> high,
+# xhigh/max -> max.
+def _normalize_dsh_effort(effort: str) -> str:
+    if effort in ("minimal", "low", "medium", "high"):
+        return "high"
+    if effort in ("xhigh", "max"):
+        return "max"
+    raise ValueError(f"unsupported effort {effort!r} for the dsh transport")
+
+
+class DshTransport(Transport):
+    """Consult via DeepSeek Harness headless: one
+    ``dsh --profile headless "<task>"`` session on the deployment's provisioned
+    dsh CLI (``DANUS_DSH_BIN`` from scripts/setup-dsh.sh, else the repo's
+    ``bin/dsh`` wrapper, else ``dsh`` on PATH).
+
+    Isolation (mirrors the codex-dsh backend): each consult runs under its own
+    DSH_HOME in ``$DANUS_RUNTIME/dsh-runs/`` — credentials + settings copied
+    from the deployment home (``DANUS_DSH_HOME``, the same home ``dsh web``
+    uses), the ``agent-default-model`` section overridden per call (model =
+    ``DANUS_CONSULT_DSH_MODEL`` or the saved model; effort = the normalized
+    consult effort when the deployment's models carry a reasoning tier) — so
+    consults never touch the operator's web sessions. The task runs in a
+    throwaway cwd; stdout (the headless session's final answer) becomes the reply.
+
+    Metering: headless reports no token usage, so usage/cost are ZERO unless the
+    operator opts in with ``DANUS_CONSULT_DSH_PRICE_IN/_OUT`` (USD per 1M) —
+    the transport then meters a char-based estimate (len/4), like the
+    claude_code estimate path.
+
+    ``runner`` is injectable so tests can stub the subprocess with no real
+    ``dsh`` binary and no network.
+    """
+
+    name = "dsh"
+
+    def __init__(self, config: DshConfig,
+                 runner: Optional[Callable[..., Any]] = None):
+        self.config = config
+        self._runner = runner or self._default_runner
+
+    @staticmethod
+    def _default_runner(cmd, *, input, cwd, env, timeout):
+        return subprocess.run(cmd, input=input, capture_output=True, text=True,
+                              cwd=cwd, env=env, timeout=timeout)
+
+    # --- per-call home ------------------------------------------------------- #
+
+    def _read_setting(self, key: str) -> Optional[str]:
+        settings = Path(self.config.home) / "settings.yaml"
+        if not settings.is_file():
+            return None
+        for line in settings.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith(key + ":"):
+                return stripped.split(":", 1)[1].strip()
+        return None
+
+    def _prepare_home(self, effort: str) -> str:
+        repo_runtime = Path(__file__).resolve().parents[2] / "runtime"
+        runtime = Path(os.environ.get("DANUS_RUNTIME") or str(repo_runtime))
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        home = runtime / "dsh-runs" / f"consult-{stamp}-{os.getpid()}"
+        home.mkdir(parents=True, exist_ok=True)
+        src = Path(self.config.home)
+        creds = src / ".credentials.yaml"
+        if creds.is_file():
+            shutil.copy2(creds, home / ".credentials.yaml")
+        settings_src = src / "settings.yaml"
+        had_effort = False
+        if settings_src.is_file():
+            shutil.copy2(settings_src, home / "settings.yaml")
+            had_effort = "reasoningEffort" in settings_src.read_text(encoding="utf-8")
+        provider = self._read_setting("provider") or "deepseek-official"
+        model = self.config.model or self._read_setting("model") or "deepseek-v4-pro"
+        # Only write a reasoningEffort when the deployment home already carries
+        # one (its models support reasoning tiers); otherwise keep the default.
+        effort_out = effort if had_effort else ""
+        self._rewrite_agent_default_model(home / "settings.yaml", provider, model,
+                                          effort_out)
+        return str(home)
+
+    @staticmethod
+    def _rewrite_agent_default_model(path: Path, provider: str, model: str,
+                                     effort: str) -> None:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            text = ""
+        lines = text.splitlines()
+        out, i, seen = [], 0, False
+        while i < len(lines):
+            line = lines[i]
+            if line.strip() == "agent-default-model:":
+                out.append(line)
+                i += 1
+                while i < len(lines) and lines[i].startswith((" ", "\t")):
+                    i += 1
+                out.append(f"  provider: {provider}")
+                out.append(f"  model: {model}")
+                if effort:
+                    out.append(f"  reasoningEffort: {effort}")
+                seen = True
+                continue
+            out.append(line)
+            i += 1
+        if not seen:
+            if out and out[-1] != "":
+                out.append("")
+            out += ["agent-default-model:", f"  provider: {provider}",
+                    f"  model: {model}"]
+            if effort:
+                out.append(f"  reasoningEffort: {effort}")
+        path.write_text("\n".join(out) + "\n", encoding="utf-8")
+
+    # --- the consult ---------------------------------------------------------- #
+
+    def _envelope(self, *, reply: str, effort: str, seconds: float, status: str,
+                  prompt: str) -> Dict[str, Any]:
+        metering = self.config.price_in > 0 or self.config.price_out > 0
+        in_tok = len(prompt) // 4 if metering else 0
+        out_tok = len(reply) // 4 if metering else 0
+        cost = round(in_tok / 1e6 * self.config.price_in
+                     + out_tok / 1e6 * self.config.price_out, 4)
+        return {
+            "transport": "dsh",
+            "model": self.config.model,
+            "effort": effort,
+            "attempt": "dsh-headless",
+            "status": status,
+            "seconds": round(seconds, 1),
+            "usage": {"input": in_tok, "output": out_tok, "reasoning": None},
+            # char-based estimate; $0 unless DANUS_CONSULT_DSH_PRICE_* are set
+            "cost_usd": cost,
+            "tool_calls": [],
+            "reasoning_summary": "",
+            "reply": reply,
+        }
+
+    def consult(self, prompt, *, effort, tools, max_output_tokens, on_progress=None):
+        effort = _normalize_dsh_effort(effort)
+        home = self._prepare_home(effort)
+        task = f"{ADVISOR_SYSTEM}\n\n{prompt}"
+        # A raw bin.js path needs the node prefix; the repo wrapper (bin/dsh) or
+        # a PATH-resolved dsh runs directly.
+        prefix = [self.config.dsh_node] if self.config.dsh_bin.endswith(".js") else []
+        cmd = [*prefix, self.config.dsh_bin, "--profile", "headless", task]
+        env = {**os.environ, "DSH_HOME": home}
+        t0 = time.time()
+        # Neutral cwd: the advisor sees the task text and its own fresh home,
+        # nothing else.
+        with tempfile.TemporaryDirectory(prefix="danus-consult-dsh-") as cwd:
+            try:
+                proc = self._runner(cmd, input=None, cwd=cwd, env=env,
+                                    timeout=self.config.max_wall)
+            except subprocess.TimeoutExpired:
+                return self._envelope(reply="", effort=effort,
+                                      seconds=self.config.max_wall,
+                                      status="timeout", prompt=prompt)
+        dt = time.time() - t0
+        reply = (proc.stdout or "").strip()
+        status = "completed" if (proc.returncode == 0 and reply) else "error"
+        return self._envelope(reply=reply, effort=effort, seconds=dt,
+                              status=status, prompt=prompt)
+

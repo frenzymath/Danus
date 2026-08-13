@@ -40,9 +40,12 @@ export DASHBOARD_PORT="${DASHBOARD_PORT:-8099}"
 export DANUS_VERIFY_URL="${DANUS_VERIFY_URL:-http://127.0.0.1:${VERIFY_PORT}/verify}"
 export DANUS_CODEX_MODEL="${DANUS_CODEX_MODEL:-${CODEX_API_MODEL:-gpt-5.5}}"   # neutral default model for every codex call (defers to the api backend model)
 export DANUS_CODEX_EFFORT="${DANUS_CODEX_EFFORT:-xhigh}"   # neutral default reasoning effort
-export DANUS_CONSULT_TRANSPORT="${DANUS_CONSULT_TRANSPORT:-gpt_pro}"   # gpt_pro | claude_api | claude_code | off
+export DANUS_CONSULT_TRANSPORT="${DANUS_CONSULT_TRANSPORT:-gpt_pro}"   # gpt_pro | claude_api | claude_code | dsh | off
 export DANUS_CHROME_BIN="${DANUS_CHROME_BIN:-}"        # headless Chrome/Chromium for human-summary PDF (empty = auto-detect)
-export CODEX_BACKEND="${CODEX_BACKEND:-api}"            # api (BYO key) | chatgpt (your login)
+export CODEX_BACKEND="${CODEX_BACKEND:-api}"            # api (BYO key) | chatgpt (your login) | dsh (DSH headless, DeepSeek)
+export DANUS_DSH_HOME="${DANUS_DSH_HOME:-$HOME/.dsh}"  # dsh home (credentials + settings) the dsh backend/transport copy from
+export DANUS_DSH_MODEL="${DANUS_DSH_MODEL:-}"          # dsh model override (empty = deployment settings win)
+export DANUS_DSH_EFFORT="${DANUS_DSH_EFFORT:-}"        # dsh reasoning-effort override (empty = map from codex effort)
 
 # 4) PATH: bin wrappers first, then the provisioned node + venv (if bootstrapped)
 _danus_path="$DANUS_ROOT/bin"

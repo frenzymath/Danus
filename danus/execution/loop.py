@@ -44,7 +44,7 @@ _FACT_ID_RE = re.compile(r'"?fact_id"?\s*[:=]\s*"?([0-9a-f]{16})"?')
 # --- the per-round prompt (continuation semantics; see worker.md) ----------- #
 
 def kickoff(project: str, worker: str) -> str:
-    return (
+    prompt = (
         f"You are worker '{worker}' on project '{project}'. Continue solving the "
         f"problem (this is a continuation round, not a fresh start).\n"
         f"1. Read TASK.md — your current assignment (which direction/subgoal is yours).\n"
@@ -59,6 +59,15 @@ def kickoff(project: str, worker: str) -> str:
         f"5. Persist as you go: rough progress to local memory; shareable findings via "
         f"gm_add; any verified result via fact_submit."
     )
+    if codex.backend() == "dsh":
+        prompt += (
+            "\n\nTool-name note (dsh backend): the danus gateway tools are exposed "
+            "under prefixed names — gm_add -> mcp__danus__gm_add, gm_search -> "
+            "mcp__danus__gm_search, fact_search -> mcp__danus__fact_search, "
+            "fact_submit -> mcp__danus__fact_submit, search_arxiv_theorems -> "
+            "mcp__danus__search_arxiv_theorems."
+        )
+    return codex.dsh_context(prompt, L.worker_md(), L.worker_skills_dir())
 
 
 # --- config (read at call time) -------------------------------------------- #

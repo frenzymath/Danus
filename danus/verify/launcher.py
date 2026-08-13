@@ -79,7 +79,16 @@ def ensure_agent_home() -> Path:
 
 
 def _results_root() -> Path:
-    return Path(os.getenv("VERIFIER_RESULTS_DIR", str(_HERE / "runs"))).resolve()
+    """Run dirs. The dsh backend defaults them under the agent home: the
+    headless session's writable workspace is its cwd (the agent home), and the
+    verifier contract has the agent write verification.json into the run dir,
+    so the two must nest. An explicit VERIFIER_RESULTS_DIR always wins."""
+    env = os.getenv("VERIFIER_RESULTS_DIR")
+    if env:
+        return Path(env).resolve()
+    if codex.backend() == "dsh":
+        return (_agent_home() / "runs").resolve()
+    return Path(str(_HERE / "runs")).resolve()
 
 
 def _model() -> str:
@@ -144,12 +153,23 @@ def _verification_path(run_id: str) -> Optional[Path]:
 
 def build_prompt(run_id: str, statement: str, proof: str) -> str:
     output_path = _results_dir(run_id) / VERIFICATION_FILENAMES[0]
-    return (
+    prompt = (
         f"Run_id: {run_id}. "
         f"Statement: {statement}. "
         f"Proof:\n{proof}\n\n"
         "Use AGENTS.md to verify the above proof for the statement. "
         f"Write the verification JSON to this exact path: {output_path}."
+    )
+    if codex.backend() == "dsh":
+        prompt += (
+            "\n\nTool-name note (dsh backend): arXiv lookups are exposed as "
+            "mcp__danus__search_arxiv_theorems; the built-in web search is the "
+            "web_search tool."
+        )
+    return codex.dsh_context(
+        prompt,
+        _REPO_ROOT / "agents" / "contracts" / "verifier.md",
+        _REPO_ROOT / "agents" / "skills" / "verify",
     )
 
 

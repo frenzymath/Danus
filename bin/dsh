@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# dsh — the DeepSeek Harness CLI as provisioned by scripts/setup-dsh.sh.
+# Keeps a single dsh installation on the workers' PATH regardless of where it
+# landed; machine paths (DANUS_DSH_NODE / DANUS_DSH_BIN) live in runtime/runtime.env.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../scripts/env.sh" >/dev/null 2>&1 || true
+if [ -z "${DANUS_DSH_BIN:-}" ] || [ ! -f "${DANUS_DSH_BIN}" ]; then
+  echo "dsh not provisioned — run scripts/setup-dsh.sh (sets DANUS_DSH_BIN)" >&2
+  exit 127
+fi
+exec "${DANUS_DSH_NODE:-node}" "$DANUS_DSH_BIN" "$@"
