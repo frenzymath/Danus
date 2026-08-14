@@ -7,7 +7,7 @@
 > entry points). Each script also carries an "EXAMPLE, NOT CORE" banner so it is
 > never mistaken for the control path.
 
-Danus has exactly one unattended mode: **run Claude Code as a
+Danus has exactly one unattended mode: **run Codex as a
 resident main agent** (`ops/main-agent-tmux.sh`). The **strategic judgment** —
 elaborate → consult GPT → record `master_guidance` → dispatch workers — lives in
 that main agent and its skills (`elaboration`, `consult`), *not* in shell.
@@ -21,8 +21,8 @@ prose follows `OPERATOR.md`; the scripts themselves only emit English mechanics.
 ## `ops/` — unattended-operation scripts
 
 ### `main-agent-tmux.sh`
-Starts Claude Code detached in a tmux session, in the repo root, so it inherits
-`CLAUDE.md`, the skills, and `.mcp.json`. `.mcp.json` is what wires the gateway
+Starts Codex detached in a tmux session, in the repo root, so it inherits
+`AGENTS.md`, `.agents/skills`, and `.codex/config.toml`. The Codex config wires the gateway
 MCP server (`python -m danus.gateway` via `bin/danus-mcp`); this launcher does
 **not** wire MCP itself.
 
@@ -31,7 +31,7 @@ bash examples/ops/main-agent-tmux.sh
 tmux attach -t danus-main        # watch / interact; DANUS_MAIN_TMUX overrides the name
 ```
 
-Requires `tmux` and the `claude` CLI on PATH. The main agent is the sole control
+Requires `tmux` and the `codex` CLI on PATH. The main agent is the sole control
 path — there is no separate Node CLI or persona-seed layer.
 
 ### `strategy-loop.sh <project>`
@@ -47,7 +47,7 @@ touch runtime/projects/<project>/.strategy.stop   # graceful stop at the next be
 ```
 
 - `DANUS_STRATEGY_BEAT` — seconds between consults (default `7200`, ~2h).
-- `DANUS_CONSULT_TRANSPORT` — `gpt_pro` (default), `claude_api`, `claude_code`, or `off`.
+- `DANUS_CONSULT_TRANSPORT` — `codex_cli` (default), `gpt_pro`, `claude_api`, `claude_code`, or `off`.
   There is no `web`/`auto` transport.
 
 The loop consults only when an `elaboration.md` is present for the project; a

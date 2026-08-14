@@ -24,7 +24,7 @@
 # Env:
 #   DANUS_STRATEGY_BEAT   seconds between consults (default 7200 = ~2h; the
 #                         skill's guidance is at most once every ~2h)
-#   DANUS_CONSULT_TRANSPORT   gpt_pro | claude_api | claude_code | off (default gpt_pro)
+#   DANUS_CONSULT_TRANSPORT   codex_cli | gpt_pro | claude_api | claude_code | off (default codex_cli)
 # =============================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,7 +35,7 @@ PROJDIR="$DANUS_AGENTS_ROOT/$PROJECT"
 [ -d "$PROJDIR" ] || { echo "no such project: $PROJDIR" >&2; exit 1; }
 
 BEAT="${DANUS_STRATEGY_BEAT:-7200}"
-TRANSPORT="${DANUS_CONSULT_TRANSPORT:-gpt_pro}"
+TRANSPORT="${DANUS_CONSULT_TRANSPORT:-codex_cli}"
 STOP="$PROJDIR/.strategy.stop"
 OUTDIR="$PROJDIR/strategy"; mkdir -p "$OUTDIR"
 
