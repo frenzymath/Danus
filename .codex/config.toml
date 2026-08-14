@@ -1,0 +1,37 @@
+# Project defaults loaded whenever this trusted repository is opened in Codex.
+# Provider/auth remain user-level by Codex design; /home/lyuwt/.codex/config.toml
+# uses the built-in OpenAI provider and ChatGPT OAuth (no CC Switch override).
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+# Danus main-agent MCP wiring for codex (role=main). Mirrors the Claude-Code
+# .mcp.json: the same three bin/ wrappers, which source scripts/env.sh and exec
+# the right venv python — so DANUS_PY / DANUS_AGENTS_ROOT / DANUS_VERIFY_URL / PATH
+# are resolved at launch, not hard-coded here. tool_timeout matches the verify
+# HTTP timeout (a fact_submit can block on a minutes-long cold-start verify).
+
+[mcp_servers.danus]
+command = "bin/danus-mcp"
+args = []
+tool_timeout_sec = 3600
+[mcp_servers.danus.env]
+DANUS_ROLE = "main"
+DANUS_AUTHOR = "main_agent"
+
+[mcp_servers.write-paper]
+command = "bin/write-paper-mcp"
+args = []
+tool_timeout_sec = 3600
+[mcp_servers.write-paper.env]
+DANUS_ROLE = "main"
+DANUS_AUTHOR = "main_agent"
+
+[mcp_servers.human-summary]
+command = "bin/human-summary-mcp"
+args = []
+tool_timeout_sec = 3600
+[mcp_servers.human-summary.env]
+DANUS_ROLE = "main"
+DANUS_AUTHOR = "main_agent"
