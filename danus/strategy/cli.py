@@ -24,11 +24,18 @@ from .config import (
 )
 from .ledger import log_spend
 from .transport import (
-    ClaudeApiTransport, ClaudeCodeTransport, GptProTransport, OffTransport,
+    ClaudeApiTransport, ClaudeCodeTransport, CodexCliTransport,
+    GptProTransport, OffTransport,
 )
 
 
 EFFORT_CHOICES = ("minimal", "low", "medium", "high", "xhigh", "max")
+
+
+def _default_effort() -> str:
+    """Deployment default: env override, else the operator's max preference."""
+    value = os.environ.get("DANUS_CONSULT_EFFORT", "max").strip().lower()
+    return value if value in EFFORT_CHOICES else "max"
 
 
 def _failure_envelope(transport: str, model: Optional[str], effort: str,
@@ -88,8 +95,8 @@ def _write_out(path: str, res: Dict[str, Any]) -> None:
 def _build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="consult",
-        description="Consult a strong model (default gpt-5.5-pro) via an "
-        "OpenAI-compatible Responses API; emit reply+cost as one JSON line.",
+        description="Consult a strong model (default gpt-5.6-sol through the "
+        "Codex CLI and ChatGPT OAuth); emit reply+cost as one JSON line.",
     )
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--file", help="read the elaboration / prompt from this file")
@@ -97,8 +104,8 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--effort",
         choices=EFFORT_CHOICES,
-        default="high",
-        help="reasoning effort (default high; max = strongest supported level)",
+        default=_default_effort(),
+        help="reasoning effort (default: $DANUS_CONSULT_EFFORT, else max)",
     )
     ap.add_argument("--tools", choices=["auto", "web", "none"], default="auto",
                     help="tool set for the richest attempts (auto = web_search + code_interpreter)")
@@ -112,11 +119,11 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--model", default=None,
                     help="override the consult model (api: any OpenAI-compatible id; "
                     "claude_api/claude_code: any Claude model, e.g. claude-fable-5 / claude-opus-4-8)")
-    ap.add_argument("--transport", choices=["gpt_pro", "claude_api", "claude_code", "off"], default=None,
-                    help="gpt_pro (the default, paid OpenAI-compatible), claude_api "
+    ap.add_argument("--transport", choices=["codex_cli", "gpt_pro", "claude_api", "claude_code", "off"], default=None,
+                    help="codex_cli (the default, ChatGPT OAuth), gpt_pro (paid OpenAI-compatible), claude_api "
                     "(paid Anthropic API, BYO key), claude_code (your Claude "
                     "subscription via the Claude Code CLI), or off (no-op short-circuit); "
-                    "falls back to $DANUS_CONSULT_TRANSPORT then gpt_pro")
+                    "falls back to $DANUS_CONSULT_TRANSPORT then codex_cli")
     ap.add_argument("--background", choices=["on", "off"], default=None,
                     help="(gpt_pro) send background=true; override for a gateway that "
                     "rejects it (default: DANUS_CONSULT_BACKGROUND, else on)")
@@ -149,6 +156,38 @@ def main(argv: Optional[list] = None) -> int:
         print(json.dumps(res, ensure_ascii=False))
         print("[consult] transport=off (disabled); returning empty reply", file=sys.stderr, flush=True)
         return 1
+
+    if transport_name == "codex_cli":
+        from danus import codex as codex_runtime
+
+        model = args.model or os.environ.get("DANUS_CONSULT_MODEL") or codex_runtime.model()
+        codex_bin = codex_runtime.resolve_bin()
+        if not _claude_available(codex_bin):
+            print(f"codex CLI not found at '{codex_bin}' (set DANUS_CODEX_BIN)",
+                  file=sys.stderr, flush=True)
+            return 3
+        try:
+            max_wall = float(os.environ.get("DANUS_CONSULT_CODEX_MAX_WALL", "7200"))
+        except ValueError:
+            max_wall = 7200.0
+        try:
+            res = CodexCliTransport(
+                model, codex_bin=codex_bin, max_wall=max_wall,
+            ).consult(
+                prompt, effort=args.effort, tools=args.tools,
+                max_output_tokens=args.max_output_tokens,
+            )
+        except Exception as exc:  # noqa: BLE001 — one pinned failure envelope
+            res = _failure_envelope("codex_cli", model, args.effort, exc)
+        if res.get("status") != "completed":
+            print(f"[consult] WARNING status={res.get('status')} (codex_cli did not complete)",
+                  file=sys.stderr, flush=True)
+        if args.project:
+            res["project_total_usd"] = log_spend(args.project, res)
+        if args.out:
+            _write_out(args.out, res)
+        print(json.dumps(res, ensure_ascii=False))
+        return 0 if res.get("status") == "completed" else 1
 
     if transport_name == "claude_code":
         # Claude Code CLI via `claude -p` (subscription auth). On failure we do NOT fall

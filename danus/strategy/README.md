@@ -17,7 +17,11 @@ danus/strategy/
 
 ## Transports (`DANUS_CONSULT_TRANSPORT`)
 
-- **`gpt_pro`** (default) — a paid OpenAI-compatible Responses endpoint
+- **`codex_cli`** (default) — `gpt-5.6-sol` through the project Codex CLI and
+  direct ChatGPT OAuth. It runs full permission in a throwaway cwd, scrubs API
+  endpoint/key overrides, and does not use CC Switch. Plain Codex CLI output does
+  not expose subscription usage, so ledger tokens/cost are recorded as zero.
+- **`gpt_pro`** — a paid OpenAI-compatible Responses endpoint
   (`DANUS_CONSULT_API_KEY`/`_BASE_URL`/`_MODEL`). Driven `stream=True` with the
   canonical message-list `input` shape (a sync xhigh call would hang the proxy).
   `background` / `store` are config knobs (`DANUS_CONSULT_BACKGROUND`, default on;
@@ -50,7 +54,8 @@ danus/strategy/
 
 ## Reasoning effort
 
-`--effort` accepts `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.
+`--effort` accepts `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`;
+the default is `DANUS_CONSULT_EFFORT`, falling back to `max`.
 All transports support through `max`. On `gpt_pro`, a `max` request may simplify
 unsupported summary/tool parameters, but it never falls back to a request with no
 reasoning effort; an endpoint that rejects `max` therefore fails visibly instead

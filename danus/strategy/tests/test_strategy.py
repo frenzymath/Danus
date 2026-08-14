@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import types
@@ -25,7 +26,7 @@ from danus.strategy.config import (
     ClaudeCodeConfig, ConsultConfig, load_claude_code_config, load_config, resolve_transport,
 )
 from danus.strategy.transport import (
-    GptProTransport, ClaudeCodeTransport, OffTransport, Transport,
+    CodexCliTransport, GptProTransport, ClaudeCodeTransport, OffTransport, Transport,
     claude_tools_for, shape_envelope, tools_for,
 )
 
@@ -326,17 +327,72 @@ def test_ledger_tolerates_malformed_lines():
 
 def test_resolve_transport():
     with _env(DANUS_CONSULT_TRANSPORT=None):
-        assert resolve_transport(None) == "gpt_pro"
+        assert resolve_transport(None) == "codex_cli"
         assert resolve_transport("off") == "off"
+        assert resolve_transport("codex_cli") == "codex_cli"
         assert resolve_transport("claude_code") == "claude_code"
     with _env(DANUS_CONSULT_TRANSPORT="off"):
         assert resolve_transport(None) == "off"
         assert resolve_transport("gpt_pro") == "gpt_pro"  # CLI wins
     with _env(DANUS_CONSULT_TRANSPORT="claude_code"):
         assert resolve_transport(None) == "claude_code"  # env recognised
-    # only 'gpt_pro', 'off', 'claude' exist; any other value resolves to the gpt_pro default
+    # An unknown value falls back to the deployment's direct OAuth default.
     with _env(DANUS_CONSULT_TRANSPORT="something-else"):
-        assert resolve_transport(None) == "gpt_pro"
+        assert resolve_transport(None) == "codex_cli"
+
+
+def test_codex_cli_transport_direct_oauth_full_permission():
+    seen = {}
+
+    def runner(cmd, *, input, cwd, env, timeout):
+        seen.update(cmd=cmd, input=input, cwd=cwd, env=env, timeout=timeout)
+        assert Path(cwd).is_dir()
+        return types.SimpleNamespace(returncode=0, stdout="four proof lanes\n", stderr="")
+
+    with _env(
+        OPENAI_API_KEY="must-not-leak",
+        OPENAI_BASE_URL="http://127.0.0.1:15722/v1",
+        DANUS_CONSULT_API_KEY="must-not-leak",
+        DANUS_CONSULT_BASE_URL="http://127.0.0.1:15722/v1",
+    ):
+        out = CodexCliTransport(
+            "gpt-5.6-sol", codex_bin="/opt/codex", max_wall=321, runner=runner,
+        ).consult("the elaboration", effort="max", tools="auto", max_output_tokens=999)
+
+    assert out["status"] == "completed" and out["reply"] == "four proof lanes"
+    assert out["model"] == "gpt-5.6-sol" and out["effort"] == "max"
+    assert out["usage"] == {"input": 0, "output": 0, "reasoning": None}
+    assert out["cost_usd"] == 0.0
+    cmd = seen["cmd"]
+    assert cmd[:2] == ["/opt/codex", "exec"]
+    i = cmd.index("--model")
+    assert cmd[i:i + 2] == ["--model", "gpt-5.6-sol"]
+    assert 'model_reasoning_effort="max"' in cmd
+    assert "--dangerously-bypass-approvals-and-sandbox" in cmd
+    assert "--skip-git-repo-check" in cmd and cmd[-1] == "-"
+    assert "the elaboration" in seen["input"]
+    assert seen["timeout"] == 321
+    assert not Path(seen["cwd"]).exists(), "throwaway cwd must be removed after the call"
+    for key in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "DANUS_CONSULT_API_KEY", "DANUS_CONSULT_BASE_URL"):
+        assert key not in seen["env"]
+
+
+def test_codex_cli_transport_failure_and_timeout_envelopes():
+    def nonzero(cmd, **kwargs):
+        return types.SimpleNamespace(returncode=9, stdout="", stderr="oauth failed")
+
+    failed = CodexCliTransport(
+        "gpt-5.6-sol", codex_bin="codex", runner=nonzero,
+    ).consult("x", effort="max", tools="none", max_output_tokens=0)
+    assert failed["status"] == "failed" and "oauth failed" in failed["error"]
+
+    def timed_out(cmd, **kwargs):
+        raise subprocess.TimeoutExpired(cmd, kwargs["timeout"])
+
+    timeout = CodexCliTransport(
+        "gpt-5.6-sol", codex_bin="codex", max_wall=12, runner=timed_out,
+    ).consult("x", effort="max", tools="none", max_output_tokens=0)
+    assert timeout["status"] == "failed" and "12s" in timeout["error"]
 
 
 def test_load_config_env():
@@ -558,6 +614,10 @@ def test_cli_api_success_full_path(capsys):
 def test_cli_accepts_max_effort():
     args = cli._build_parser().parse_args(["--stdin", "--effort", "max"])
     assert args.effort == "max"
+    with _env(DANUS_CONSULT_EFFORT=None):
+        assert cli._build_parser().parse_args(["--stdin"]).effort == "max"
+    with _env(DANUS_CONSULT_EFFORT="high"):
+        assert cli._build_parser().parse_args(["--stdin"]).effort == "high"
 
 
 def test_cli_api_warns_on_non_completed_status(capsys):

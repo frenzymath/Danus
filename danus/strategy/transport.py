@@ -1,8 +1,9 @@
-"""Consult transports — the abstract gateway + the OpenAI-compatible API impl.
+"""Consult transports — the abstract gateway plus direct and API implementations.
 
 A ``Transport`` takes a prompt and returns a uniform JSON envelope (see
-``shape_envelope``). ``GptProTransport`` is the default: it drives an
-OpenAI-compatible **Responses** API in streaming mode (``background`` / ``store``
+``shape_envelope``). ``CodexCliTransport`` is the deployment default: it drives
+Codex directly through ChatGPT OAuth without an API proxy. ``GptProTransport``
+drives an OpenAI-compatible **Responses** API in streaming mode (``background`` / ``store``
 are config knobs — a stricter gateway that rejects one is fixed by turning it off,
 not by guessing from the error text) and steps effort/tools down only on a 400.
 ``OffTransport`` short-circuits to a disabled result.
@@ -20,6 +21,8 @@ import subprocess
 import tempfile
 import time
 from typing import Any, Callable, Dict, List, Optional
+
+from danus import codex as codex_runtime
 
 from .config import (
     ClaudeApiConfig, ConsultConfig,
@@ -133,8 +136,116 @@ class OffTransport(Transport):
         }
 
 
+# ---- codex_cli transport (ChatGPT OAuth, no API proxy) ----------------------
+
+CODEX_ADVISOR_PROMPT = (
+    "You are a senior research-mathematics strategy advisor for an automated "
+    "proof-search system. The text below is the current evidence-bounded "
+    "elaboration. Return only concrete strategic guidance: identify the most "
+    "promising proof decomposition, the decisive missing lemmas, falsification "
+    "tests, and four non-overlapping worker lanes. Separate verified facts from "
+    "hypotheses and never claim that guidance is proof. Do not ask questions.\n\n"
+)
+
+_SCRUB_CODEX_API_ENV = (
+    "OPENAI_API_KEY", "OPENAI_BASE_URL", "CODEX_API_BASE_URL",
+    "DANUS_CODEX_API_KEY", "DANUS_CONSULT_API_KEY", "DANUS_CONSULT_BASE_URL",
+)
+
+
+class CodexCliTransport(Transport):
+    """One-shot Codex consult through direct ChatGPT OAuth.
+
+    The child uses the deployment's ``CODEX_HOME`` login and config. It runs in
+    a throwaway cwd, receives the prompt on stdin, and deliberately scrubs API
+    endpoint/key overrides so it cannot fall back to an API proxy. The operator
+    requested full permission, so the child uses Codex's full-permission flag;
+    the empty cwd still prevents accidental project-file access.
+
+    ChatGPT subscription calls do not expose token usage/pricing through the
+    plain ``codex exec`` surface, so the pinned envelope records zero token counts
+    and ``cost_usd=0`` while still appending the consult event to the ledger.
+    """
+
+    name = "codex_cli"
+
+    def __init__(self, model: str, *, codex_bin: str,
+                 max_wall: float = 7200.0,
+                 runner: Optional[Callable[..., Any]] = None):
+        self.model = model
+        self.codex_bin = codex_bin
+        self.max_wall = max_wall
+        self._runner = runner or self._default_runner
+
+    @staticmethod
+    def _default_runner(cmd, *, input, cwd, env, timeout):
+        return subprocess.run(
+            cmd, input=input, capture_output=True, text=True,
+            cwd=cwd, env=env, timeout=timeout,
+        )
+
+    def _envelope(self, *, effort: str, seconds: float, status: str,
+                  reply: str = "", error: str = "") -> Dict[str, Any]:
+        result = {
+            "transport": "codex_cli",
+            "model": self.model,
+            "effort": effort,
+            "attempt": "codex-cli-oauth",
+            "status": status,
+            "seconds": round(seconds, 1),
+            "usage": {"input": 0, "output": 0, "reasoning": None},
+            "cost_usd": 0.0,
+            "tool_calls": [],
+            "reasoning_summary": "",
+            "reply": reply,
+        }
+        if error:
+            result["error"] = error
+        return result
+
+    def consult(self, prompt, *, effort, tools, max_output_tokens,
+                on_progress=None):
+        cmd = codex_runtime.exec_cmd(
+            self.codex_bin, self.model, effort,
+            "--dangerously-bypass-approvals-and-sandbox",
+            "--skip-git-repo-check",
+            "-",
+        )
+        env = codex_runtime.subprocess_env(self.codex_bin)
+        for name in _SCRUB_CODEX_API_ENV:
+            env.pop(name, None)
+        t0 = time.time()
+        with tempfile.TemporaryDirectory(prefix="danus-consult-codex-") as cwd:
+            try:
+                proc = self._runner(
+                    cmd,
+                    input=CODEX_ADVISOR_PROMPT + prompt,
+                    cwd=cwd,
+                    env=env,
+                    timeout=self.max_wall,
+                )
+            except subprocess.TimeoutExpired:
+                return self._envelope(
+                    effort=effort, seconds=self.max_wall, status="failed",
+                    error=f"Codex CLI timed out after {self.max_wall:.0f}s",
+                )
+        dt = time.time() - t0
+        reply = (proc.stdout or "").strip()
+        if proc.returncode != 0 or not reply:
+            error = (proc.stderr or "Codex CLI returned no reply").strip()
+            return self._envelope(
+                effort=effort, seconds=dt, status="failed",
+                error=error[-4000:],
+            )
+        if on_progress:
+            on_progress(dt, "completed", 1)
+        return self._envelope(
+            effort=effort, seconds=dt, status="completed", reply=reply,
+        )
+
+
 class GptProTransport(Transport):
-    """OpenAI-compatible Responses transport (the default).
+    """OpenAI-compatible Responses transport.
 
     ``client_factory`` lets tests inject a stub client without a real OpenAI
     package or network; production builds it from the config.

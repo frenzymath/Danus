@@ -11,8 +11,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-# Default OpenAI-compatible model id (large-reasoning "pro" tier).
-DEFAULT_MODEL = "gpt-5.5-pro"
+# Default OpenAI-compatible model id for this Codex-first deployment.
+DEFAULT_MODEL = "gpt-5.6-sol"
 # Default model for the claude_code (subscription) transport. Kept
 # separate from DEFAULT_MODEL so opting into claude never picks up the gpt default.
 DEFAULT_CLAUDE_CODE_MODEL = "claude-fable-5"
@@ -110,15 +110,16 @@ def load_config() -> ConsultConfig:
 
 def resolve_transport(cli_value: str | None) -> str:
     """Pick the transport: explicit CLI flag > ``DANUS_CONSULT_TRANSPORT`` env
-    > ``gpt_pro`` (the default / core direction-guidance path).
+    > ``codex_cli`` (the default / direct ChatGPT-OAuth direction-guidance path).
 
-    Recognized transports: ``gpt_pro`` (paid OpenAI-compatible), ``claude_api``
+    Recognized transports: ``codex_cli`` (Codex through ChatGPT OAuth),
+    ``gpt_pro`` (paid OpenAI-compatible), ``claude_api``
     (paid Anthropic API, native SDK), ``claude_code`` (the Claude Code CLI via
     ``claude -p``, subscription auth), and ``off``. Any other value resolves to
-    the ``gpt_pro`` default.
+    the direct ``codex_cli`` default.
     """
-    val = (cli_value or os.environ.get("DANUS_CONSULT_TRANSPORT") or "gpt_pro").strip().lower()
-    return val if val in ("off", "gpt_pro", "claude_api", "claude_code") else "gpt_pro"
+    val = (cli_value or os.environ.get("DANUS_CONSULT_TRANSPORT") or "codex_cli").strip().lower()
+    return val if val in ("off", "codex_cli", "gpt_pro", "claude_api", "claude_code") else "codex_cli"
 
 
 @dataclass(frozen=True)
