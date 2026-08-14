@@ -23,7 +23,7 @@ verifier) decides; and a result only *exists* once that authority has accepted i
   surfaces (is this the answer? push the paper outward?), and set the spending and
   operating preferences. You talk to Danus in natural language through the main
   agent.
-- **The main agent (Claude Code).** The orchestrator and your entry point. It
+- **The main agent (Codex).** The orchestrator and your entry point. It
   **steers — it does not do the mathematics.** It sets up projects, runs the
   strategy loop, assigns work, monitors, and drives the report/paper skills. It
   *structurally cannot* fabricate a result (it has no `fact_submit` tool).
@@ -95,8 +95,9 @@ new state:
    each worker its per-round assignment (`danus assign`).
 4. **Monitor** — watch progress; repeat when there is genuinely new state.
 
-The consult transport is configurable: **`gpt_pro`** (a paid OpenAI-compatible
-model, the default), **`claude_api`** (the Anthropic API, per-token BYO key),
+The consult transport is configurable: **`codex_cli`** (the default direct
+ChatGPT-OAuth Codex route), **`gpt_pro`** (a paid OpenAI-compatible
+model), **`claude_api`** (the Anthropic API, per-token BYO key),
 **`claude_code`** (your Claude subscription via the Claude Code CLI), or **`off`** (the
 main agent reasons on its own, no spend). Workers and the verifier always run on
 your own codex backend.

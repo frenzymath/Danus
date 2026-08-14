@@ -1,7 +1,7 @@
 # Danus — Operating Guide
 
 How to run a project end to end, from the operator's seat. You do this by **talking
-to the main agent** (Claude Code) in natural language; it runs the CLI verbs and
+to the main agent** (Codex) in natural language; it runs the CLI verbs and
 tools for you. Read `concepts.md` first; set up with `getting-started.md`.
 
 > This guide describes the human workflow. Command/tool details are in
@@ -33,10 +33,10 @@ re-reads your `OPERATOR.md` and the project's `PROBLEM.md`.
 
 Tell the main agent the problem. It will:
 
-1. **Ask the worker roster** — how many `high` + `xhigh` workers (default
-   `high:3,xhigh:4` = 3 + 4).
+1. **Ask the worker roster** — the default is two `max` + two `high` workers
+   (`max:2,high:2`).
 2. **Write `PROBLEM.md`** — your goal, verbatim, under `runtime/projects/<p>/`.
-3. **Scaffold** — `danus new <p> --roles high:N,xhigh:M` (creates the workers, the
+3. **Scaffold** — `danus new <p> --roles max:N,high:M` (creates the workers, the
    empty `global_memory/` + `fact_graph/`).
 
 A **project** is the unit of work: one problem, its own memory and fact graph. You
@@ -49,7 +49,7 @@ new state:
 
 1. **Elaborate** — distill the shared stores into a high-signal synthesis (verdict,
    closed routes, dangers, the missing bridge lemmas). *(the `elaboration` skill)*
-2. **Consult** — send that to a strong model. *(the `consult` skill; `gpt_pro`
+2. **Consult** — send that to a strong model. *(the `consult` skill; direct-OAuth `codex_cli`
    by default, `claude_api`, `claude_code`, or `off`)*
 3. **Assign** — record the reply as `master_guidance` and give each worker its
    per-round task (`danus assign`).

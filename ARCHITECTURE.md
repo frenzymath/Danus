@@ -46,7 +46,7 @@ Danus/
 │  ├─ gateway/                  ⑥ role-gated MCP: 6 tools · role table (roles.py)
 │  ├─ verify/                   ④ verification HTTP service · prechecks · cold-start codex launcher
 │  ├─ execution/                ③ worker swarm: round loop · project/worker lifecycle + layout
-│  ├─ strategy/                 ② consult gateway (gpt_pro|claude_api|claude_code|off transport)
+│  ├─ strategy/                 ② consult gateway (codex_cli|gpt_pro|claude_api|claude_code|off)
 │  ├─ orchestration/            ① the `danus` CLI verbs
 │  ├─ integrations/             arXiv theorem search (Matlas)
 │  ├─ observability/            read-only dashboard
@@ -59,7 +59,7 @@ Danus/
 │     ├─ worker/                9 proving skills (inherited from Rethlas)
 │     ├─ verify/                3 verify skills
 │     └─ write-paper/           paper role prompts + house style (embedded by the write-paper MCP)
-├─ .claude/skills/              MAIN-AGENT SKILLS (Claude Code auto-discovers)
+├─ .agents/skills/              MAIN-AGENT SKILLS (Codex auto-discovers; mirrors .claude/skills)
 │  ├─ elaboration/  consult/  human-summary/  initialize/
 │  └─ write-paper/              the recipe SKILL.md + driver/ scripts + templates/
 ├─ bin/                         thin wrappers: danus · danus-mcp · write-paper-mcp · human-summary-mcp · codex · consult
@@ -88,9 +88,9 @@ Danus/
    persisted memory rather than adding one increment, so no single crash loses
    verified work.
 6. The strategy consult is the brain. Between rounds the main agent consults a
-   top-tier reasoning model (gpt-5.5-pro over the `gpt_pro` transport, or
+   top-tier reasoning model (`gpt-5.6-sol` over direct-OAuth `codex_cli`, or
    claude-fable-5 over the `claude_api` / `claude_code` transports) to set direction;
-   its reply becomes the swarm's `master_guidance`. Transport is `gpt_pro` (default),
+   its reply becomes the swarm's `master_guidance`. Transport is `codex_cli` (default),
    `claude_api`, `claude_code`, or `off` (no key — the main agent reasons on its own). The consult is not
    optional — it is how the swarm gets steered.
 7. Portable and BYO. No hardcoded absolute paths, no committed secrets; keys come
@@ -121,7 +121,7 @@ Danus/
 | contract | pinned shape | ends |
 |---|---|---|
 | MCP tool set + role gating | 6 tools; `roles.py` `ROLE_TOOLS` (main has NO `fact_submit`; verifier read-only) | `danus.gateway` ↔ worker/main/verifier agents |
-| MCP launch | `python -m danus.gateway` + `DANUS_ROLE` env | `danus.verify` launcher · worker `.codex/config.toml` · `.mcp.json` (main) → `danus.gateway` |
+| MCP launch | `python -m danus.gateway` + `DANUS_ROLE` env | `danus.verify` launcher · worker/main `.codex/config.toml` → `danus.gateway` (`.mcp.json` remains a compatibility surface) |
 | verify HTTP | `POST /verify {statement,proof}` → `{verification_report,verdict,repair_hints}`; verdict ⟺ no critical_errors & no gaps | `danus.gateway.fact_submit` ↔ `danus.verify` |
 | fact id inputs | `problem_id + sorted(predecessors) + sorted(glossary) + normalized(statement,proof)`; **external_refs EXCLUDED** | `danus.core` ↔ everyone (write-paper reads `external_refs`) |
 | global-memory kinds | the 11 `GLOBAL_KINDS` (incl. `master_guidance`/`elaboration`/`verification`) | `danus.core` ↔ agents · strategy · consult |

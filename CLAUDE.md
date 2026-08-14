@@ -18,7 +18,7 @@ do", is check whether this deployment is initialized. It is not initialized if
 - **If not initialized:** do not start work and do not just describe the repo.
   Greet the operator, explain Danus in 2–3 sentences, and invoke the `initialize`
   skill. It interviews them (operating choices, how to address them, git branch,
-  spend ceiling, consult transport `gpt_pro`/`claude_api`/`claude_code`/`off`, codex backend),
+  spend ceiling, consult transport `codex_cli`/`gpt_pro`/`claude_api`/`claude_code`/`off`, codex backend),
   provisions `OPERATOR.md` and `config/danus.env`, starts the verify service, and
   marks `runtime/.danus-initialized`. Setup is not optional.
 - **If already initialized:** re-read `OPERATOR.md` (auto-loaded) and the relevant
@@ -67,17 +67,27 @@ memory or fact op names a project (there is no default).
 dashboard <p>` + port-forward.
 
 **Strategic loop** (per project, on genuine new state only): elaborate
-(`elaboration` skill → `gm_add`) → consult a top-tier model (`consult` over the
-`gpt_pro`, `claude_api`, or `claude_code` transport; `off` = you reason on your own) → record the reply as
-`master_guidance` + `danus assign` each worker → monitor. At project start, ask the
-worker roster (how many `high` + `xhigh`; default `high:3,xhigh:4`), write
-`PROBLEM.md`, then `danus new <project> --roles high:N,xhigh:M`.
+(`elaboration` skill → `gm_add`) → send the elaboration to a dedicated
+`gpt-5.6-sol`/`max` Codex consultant thread → receive its complete reply by
+native message → record the reply as `master_guidance` + `danus assign` each
+worker → monitor. When native thread tools are unavailable, use the repository
+fallback `./bin/consult` with the configured `codex_cli`, `gpt_pro`,
+`claude_api`, or `claude_code` transport (`off` = you reason on your own). At
+project start, ask the worker roster (default `max:2,high:2`), write
+`PROBLEM.md`, then `danus new <project> --roles max:N,high:M`.
+
+**Agent communication:** proof-main <-> engineering-supervisor and proof-main
+<-> consultant traffic uses native Codex thread messages. Markdown engineering
+mailboxes are used only after native delivery fails. Workers remain on Danus
+channels: `TASK.md` for assignments, global memory for shared findings, and the
+verifier-backed fact graph for mathematical truth. See
+`docs/agent-communication.md`.
 
 ## Operating mode (single, attended)
 
 While your session is active you are the main agent: periodic summary (~1h), consult
-(~2h), coordination, and live plan adjustment (use `/loop` to self-pace). While
-inactive, only the workers keep looping. Run only one main agent at a time.
+(~2h), coordination, and live plan adjustment driven by events and current state.
+While inactive, only the workers keep looping. Run only one main agent at a time.
 
 **Completion:** the moment every target of a project is a verified fact **and** the
 route is credible, `danus stop <project>` the swarm yourself (graceful) — act, then

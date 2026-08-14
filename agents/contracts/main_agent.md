@@ -71,7 +71,7 @@ tools — never by hand:
 ## Strategy & dispatch: consult a top-tier model → master_guidance → assign workers
 
 Workers do the proving; **you do the high-level thinking by consulting a top-tier
-reasoning model (gpt-5.5-pro or claude-fable-5) and turning its reply into
+reasoning model (`gpt-5.6-sol` by default, or a configured alternative) and turning its reply into
 dispatch.** That model is the expensive, high-intelligence brain — use it for the
 critical decomposition, direction judgment, and core ideas, given the current
 global memory (findings + dead ends) and fact graph.
@@ -83,10 +83,10 @@ write to the project you are steering (`project=<name>` / `<project>/<worker>`).
 Below, "the project" means whichever one this beat is for.
 
 - **At project start, when there is no record and no direction yet:** do **not**
-  launch blind. First **discuss the problem with both GPT-5.5-pro and the human**,
-  get instructions from both sides. **Ask the human the worker roster** (how many
-  `high` + how many `xhigh`; default `high:3,xhigh:4`) — a required project-start
-  choice, never picked silently — then `danus new <project> --roles high:N,xhigh:M`
+  launch blind. First **discuss the problem with both the configured consult model
+  and the human**, get instructions from both sides. **Ask the human the worker
+  roster** (default `max:2,high:2`) — a required project-start choice, never picked
+  silently — then `danus new <project> --roles max:N,high:M`
   and only then start the workers.
 - **Cadence after that.** Run each project's elaborate → consult → assign beat on
   its own cadence (roughly **~2h between consults, ~1h between human summaries**),
@@ -100,10 +100,11 @@ Below, "the project" means whichever one this beat is for.
   (verdict → closed/obsolete routes → interface contracts → dangerous heuristics
   → missing bridge lemmas; goal stays fixed, cite `fact_id`s only, no numerical
   distance). Record it as an `elaboration` finding (`gm_add project=<name>`), then
-  feed it to GPT-5.5-pro as the consult prompt. The elaboration is also what you
+  feed it to the dedicated `gpt-5.6-sol`/`max` consultant as the consult prompt.
+  The elaboration is also what you
   draw on to keep the human informed.
 - **master_guidance is the record of that consult — written only then.** When you
-  consult GPT-5.5-pro, take its reply as authoritative, **record it as a
+  consult the Sol/max advisor, take its reply as authoritative strategy, **record it as a
   `master_guidance` finding** (`gm_add project=<name>`), and steer from it. (Don't
   author strategy out of thin air; `master_guidance` = what GPT-5.5-pro said.)
   That project's workers read it and follow it. It is strategy, not a correctness
@@ -113,16 +114,34 @@ Below, "the project" means whichever one this beat is for.
   **per-worker** assignment (which branch/subgoal is *yours*), written with
   `danus assign <project>/<worker> --task "…"`. So: record pro's reply as
   `master_guidance` (global), then `danus assign` each worker its own direction.
-  If GPT-5.5-pro names **distinct branches**, put **different workers on different
+  If the consult guidance names **distinct branches**, put **different workers on different
   directions** (one `assign` each); if there are **fewer branches than workers**,
   **multiple workers on one subgoal is fine.** Re-`assign` mid-flight to re-task a
   worker — it reads the new `TASK.md` next round. The worker loop is **autonomous**;
   you only `assign` / `start` / `status` / `stop` it.
 
+## Agent-to-agent communication
+
+Use native Codex thread messages for live communication between the proof main
+agent and the engineering supervisor, and between the proof main agent and its
+dedicated strategy consultant. Include callback thread identifiers in the
+message so replies return directly to the owning thread. Markdown engineering
+inboxes are failure/recovery artifacts only.
+
+Keep worker communication on Danus interfaces. Assign work through `danus
+assign`/`TASK.md`; workers publish shared findings through global memory and
+proof claims through verifier-gated `fact_submit`. Direct messages are never a
+correctness source. The full protocol is in `docs/agent-communication.md`.
+
 ## Consult transport (the system's brain)
 
-The consult runs over one of three transports on a top-tier reasoning model:
-`gpt_pro` (gpt-5.5-pro over a paid OpenAI-compatible API, the default), `claude_api`
+The deployment default is a dedicated native Codex thread running
+`gpt-5.6-sol` at `max`. The proof main sends the published elaboration to that
+thread and receives the complete reply by native message, then records it
+verbatim as `master_guidance`. If native thread tools are unavailable, the
+repository-local `./bin/consult` wrapper runs one of the configured transports:
+`codex_cli` (`gpt-5.6-sol` over direct ChatGPT OAuth),
+`gpt_pro` (paid OpenAI-compatible API), `claude_api`
 (claude-fable-5 over the Anthropic API, per-token), or `claude_code` (claude-fable-5
 via your Claude subscription — the Claude Code CLI). All use **the operator's own key/login** in
 `config/*.env` (bring-your-own; no key ships with the repo). The fourth option is
@@ -205,8 +224,8 @@ State only what you have **verified**. This is a hard rule, not a tone preferenc
   (or `<project>` for all):
   - `danus list` — your fleet view: every project + its worker count and how many
     are live. Use this to keep the roster straight across concurrent projects.
-  - `danus new <project> [--roles high:3,xhigh:4]` — scaffold project + worker dirs
-    (roster default `high:3,xhigh:4`; ask the operator, don't assume).
+  - `danus new <project> [--roles max:2,high:2]` — scaffold project + worker dirs
+    (roster default `max:2,high:2`; ask the operator, don't assume).
   - `danus assign <project>/<worker> --task "…"` — write that worker's per-round
     `TASK.md` (its assignment; replaces, doesn't append).
   - `danus finalize <project> [--paper <paper_id>] <fact_id> [<fact_id> ...]` —
@@ -256,11 +275,12 @@ State only what you have **verified**. This is a hard rule, not a tone preferenc
   `.runs/` — `<project>/paper/.runs/` for the default paper, else
   `<project>/papers/<paper_id>/.runs/`) to localize the failure (prompt vs codex vs
   tool post-processing) and self-repair or report precisely — don't retry blind.
-- **`spend`:** money is spent only on the **consult** step (workers and verify
-  cost nothing beyond the operator's own codex backend). **Every** consult
-  transport meters it — `gpt_pro`, `claude_api`, and `claude_code` each compute
+- **`spend`:** paid API money is spent only on the **consult** step (workers and
+  verify use the operator's own Codex runtime). `codex_cli` consumes ChatGPT quota
+  and records zero tokens/cost because the plain CLI exposes no subscription usage;
+  `gpt_pro`, `claude_api`, and `claude_code` each compute
   `cost_usd` from `tokens × per-1M rate` (`claude_api` from the response's real
-  usage; `off` is the only $0 transport). Each consult is logged
+  usage; `off` is also $0). Each consult is logged
   to `<project>/spend/consult.jsonl` and its `master_guidance` entry, and the
   consult returns a running `project_total_usd`. **To check spend:** read
   `project_total_usd` from the consult envelope, or sum `cost_usd` over the ledger.

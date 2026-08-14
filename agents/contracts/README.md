@@ -6,13 +6,13 @@ the binding operating protocol, distinct from the on-demand skills under
 
 | File | Tier | Reads / writes |
 | --- | --- | --- |
-| `main_agent.md` | main agent (Claude Code) | reads global memory + fact graph; writes `master_guidance` / `elaboration` (`gm_add`); `fact_revoke`; high-autonomy orchestration. NO `fact_submit`. |
+| `main_agent.md` | main agent (Codex) | reads global memory + fact graph; writes `master_guidance` / `elaboration` (`gm_add`); `fact_revoke`; high-autonomy orchestration. NO `fact_submit`. |
 | `worker.md` | codex worker | local memory (private) · global memory (`gm_add` / `gm_search`) · fact graph (`fact_submit`); the adaptive proving loop. Loaded per round via the worker home's `AGENTS.md` symlink. |
 | `verifier.md` | codex verifier (verify service) | judges `{statement, proof}` → strict verdict; called by `fact_submit`; read-only (only `search_arxiv_theorems`); writes its verdict JSON directly to results/{run_id}/verification.json. |
 
-Claude Code, the primary main agent, also auto-loads its condensed contract from
-the repo-root `CLAUDE.md`; `main_agent.md` is the full contract and single source
-of truth (the two must not contradict).
+Codex, the primary main agent, auto-loads the repo-root `AGENTS.md`, which points
+to the full `CLAUDE.md` compatibility contract; `main_agent.md` remains the full
+role contract and the files must not contradict.
 
 ## The shared spine
 

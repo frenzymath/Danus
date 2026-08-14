@@ -21,7 +21,7 @@ there is no default project.
 | verb | form | what it does |
 |---|---|---|
 | `list` | `danus list [--json]` | all projects + live worker counts + model |
-| `new` | `danus new <project> [--roles high:3,xhigh:4] [--model M]` | scaffold a project + worker dirs; default roster 3 `high` + 4 `xhigh` |
+| `new` | `danus new <project> [--roles max:2,high:2] [--model M]` | scaffold a project + worker dirs; default roster 2 `max` + 2 `high` |
 | `assign` | `danus assign <project>/<worker> (--task "…" \| --file P \| --stdin)` | write that worker's per-round `TASK.md` (**replaces**, not appends) |
 | `finalize` | `danus finalize <project> [--paper <paper_id>] [<fact_id> …]` | record the approved target theorem(s) in the paper's `TARGET.md` (what write-paper reads; default paper → `<project>/TARGET.md`, a non-default `--paper` → `<project>/papers/<paper_id>/TARGET.md`). **With no id:** print candidate terminal facts as suggestions (writes nothing) |
 | `start` | `danus start <project>[/<worker>]` | launch the autonomous worker loop(s) |
@@ -103,7 +103,8 @@ language in `OPERATOR.md`).
 
 ## Main-agent skills (invoked in-session, not MCP tools)
 
-The main agent also has Claude Code **skills** under `.claude/skills/`:
+The Codex main agent has **skills** under `.agents/skills/` (mirrored from
+`.claude/skills/` for compatibility):
 `initialize` (first-run setup), `elaboration` (the strategy synthesis),
 `consult` (the strategy consult), `human-summary`, and `write-paper`. These
 orchestrate the tools and CLI above; see `operating-guide.md` for how they fit the

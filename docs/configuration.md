@@ -20,7 +20,8 @@ The `bin/` wrappers source `env.sh` for you. Values below are the defaults from
 | `CODEX_BACKEND` | `api` | `api` (BYO OpenAI-compatible key) or `chatgpt` (your ChatGPT login) |
 | `CODEX_HOME` | `runtime/codex-home` | codex auth/config home (gitignored) |
 | `CODEX_API_BASE_URL` | — | (api) your OpenAI-compatible Responses endpoint |
-| `CODEX_API_MODEL` | `gpt-5.5` | (api) backend model |
+| `CODEX_API_MODEL` | `gpt-5.6-sol` | (api) backend model |
+| `CODEX_MODEL_CATALOG_JSON` | — | optional Codex JSON model catalog; makes custom models visible with their metadata |
 | `DANUS_CODEX_API_KEY` | — | (api) key, **read at run time**, never stored in a file |
 
 These live in `config/codex.env`. See `getting-started.md` §2 and
@@ -30,10 +31,12 @@ These live in `config/codex.env`. See `getting-started.md` §2 and
 
 | variable | default | meaning |
 |---|---|---|
-| `DANUS_CONSULT_TRANSPORT` | `gpt_pro` | `gpt_pro` \| `claude_api` \| `claude_code` \| `off` |
+| `DANUS_CONSULT_TRANSPORT` | `codex_cli` | `codex_cli` \| `gpt_pro` \| `claude_api` \| `claude_code` \| `off` |
 | `DANUS_CONSULT_API_KEY` | — | (gpt_pro) key for the OpenAI-compatible Responses API |
 | `DANUS_CONSULT_BASE_URL` | `https://api.openai.com/v1` | (gpt_pro) endpoint |
-| `DANUS_CONSULT_MODEL` | `gpt-5.5-pro` | (gpt_pro) model |
+| `DANUS_CONSULT_MODEL` | `gpt-5.6-sol` | (gpt_pro) model |
+| `DANUS_CONSULT_EFFORT` | `max` | default consult reasoning effort; per-call `--effort` wins |
+| `DANUS_CONSULT_CODEX_MAX_WALL` | `7200` | (codex_cli) hard wall-clock cap per consult (s) |
 | `DANUS_CONSULT_BACKGROUND` | `1` | (gpt_pro) send `background=true`; `0` for a gateway that rejects it (per-call: `--background off`) |
 | `DANUS_CONSULT_STORE` | `0` | (gpt_pro) send `store=false`; `1` for a gateway that requires stored responses (per-call: `--store on`) |
 | `DANUS_CONSULT_CLAUDE_CODE_MODEL` | `claude-fable-5` | (claude_code) model via the `claude` CLI |
@@ -48,7 +51,10 @@ These live in `config/codex.env`. See `getting-started.md` §2 and
 | `DANUS_CONSULT_CLAUDE_API_PRICE_IN` | `10.0` | (claude_api) USD per 1M input tokens (real usage) |
 | `DANUS_CONSULT_CLAUDE_API_PRICE_OUT` | `50.0` | (claude_api) USD per 1M output tokens (real usage) |
 
-- `gpt_pro` = a paid, per-token OpenAI-compatible model. `claude_api` = the
+- `codex_cli` = direct ChatGPT OAuth through the project Codex runtime (default,
+  full permission, throwaway cwd, no CC Switch/API proxy). The CLI does not expose
+  subscription usage, so its ledger event records zero tokens and `cost_usd=0`.
+  `gpt_pro` = a paid, per-token OpenAI-compatible model. `claude_api` = the
   Anthropic API via the native SDK (per-token, BYO key; cost from real usage).
   `claude_code` = your Claude subscription via the Claude Code CLI (`claude -p`).
   `off` = the main agent reasons on its own, no consult.
@@ -57,7 +63,8 @@ These live in `config/codex.env`. See `getting-started.md` §2 and
   `claude` CLI), web-only tools, and the prompt on stdin (never argv, which is
   world-readable on a shared host). It sees the elaboration and the public web,
   nothing else.
-- Consult effort is selected per call with `--effort`. Accepted values are
+- Consult effort defaults to `DANUS_CONSULT_EFFORT` and can be selected per call
+  with `--effort`. Accepted values are
   `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`. All transports support
   through `max`; a `gpt_pro` `max` request is never silently retried without its
   requested reasoning effort.
@@ -71,9 +78,10 @@ defaults apply everywhere; per-service overrides win.
 | variable | default | applies to |
 |---|---|---|
 | `DANUS_CODEX_BIN` | `<repo>/bin/codex`, else `codex` on PATH | all codex calls |
-| `DANUS_CODEX_MODEL` | `gpt-5.5` | neutral default (all sites) |
-| `DANUS_CODEX_EFFORT` | `xhigh` | neutral default effort (all sites) |
-| `DANUS_VERIFY_MODEL` / `_EFFORT` | neutral | verifier — the correctness authority; keep effort at `xhigh` |
+| `DANUS_CODEX_MODEL` | `gpt-5.6-sol` | neutral default (all sites) |
+| `DANUS_CODEX_EFFORT` | `max` | neutral default effort (all sites) |
+| `DANUS_MAIN_MODEL` / `_EFFORT` | `gpt-5.6-sol` / `xhigh` | resident Codex main-agent TUI |
+| `DANUS_VERIFY_MODEL` / `_EFFORT` | neutral | verifier — the correctness authority; keep effort at `max` |
 | `DANUS_WRITE_PAPER_MODEL` / `_EFFORT` | neutral | paper renderer |
 | `DANUS_HUMAN_SUMMARY_MODEL` / `_EFFORT` | neutral | human-summary renderer |
 

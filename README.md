@@ -9,7 +9,7 @@
 </p>
 
 Danus orchestrates mathematical reasoning agents with fact-graph memory. A main
-agent (Claude Code) steers a swarm of autonomous codex workers that prove; a
+agent (Codex in this checkout) steers a swarm of autonomous codex workers that prove; a
 cold-start verifier is the sole authority on correctness: a result becomes real
 only once it passes. Verified results accumulate in a content-addressed fact
 graph — the system's only source of truth — and a strategy loop (a strong
@@ -26,22 +26,14 @@ along the way.
 
 See `ARCHITECTURE.md` for the layered design and the map of every module.
 
-## Two orchestrator options
+## Codex orchestrator
 
-The workers and the verifier always run on **codex**. The **main agent (the
-orchestrator)** can run on either runtime — pick one:
+The main agent, workers, verifier, paper writer, and progress-report renderer all
+run through **Codex** in this checkout. The project-scoped entry points are
+`AGENTS.md`, `.agents/skills/`, and `.codex/config.toml`.
 
-- **Claude Code — recommended (this branch / `main`).** Best results with
-  **Fable (`claude-fable-5`)** as the orchestrator model. Requires the Claude Code
-  CLI in addition to your codex backend.
-- **codex — for convenience (the [`codex` branch](https://github.com/frenzymath/Danus/tree/codex), tag `v0.1.0-codex`).**
-  The orchestrator runs on codex too, so you install **nothing beyond codex** — no
-  Claude Code. Same engine, workers, and verifier; only the main-agent runtime
-  differs (`AGENTS.md` + `.codex/config.toml` + `.agents/skills/` in place of
-  `CLAUDE.md` + `.mcp.json` + `.claude/skills/`).
-
-Fable-via-Claude-Code is the recommended orchestrator; the fully-codex line exists
-so a codex-only setup works out of the box.
+The Claude-facing files remain synchronized compatibility surfaces. The Codex
+setup follows the upstream `codex` branch / `v0.1.0-codex` design.
 
 
 ## How it works
@@ -101,7 +93,8 @@ danus/                 the engine (installable Python package)
   write_paper/         write-paper MCP service (fact graph → publishable LaTeX paper)
   human_summary/       human-summary MCP service (fact graph → progress-report PDF)
 agents/                codex agent contracts (main/worker/verifier) + worker & verify skills
-.claude/skills/        main-agent skills: elaboration · consult · human-summary · initialize · write-paper
+.agents/skills/        Codex main-agent skills: elaboration · consult · human-summary · initialize · write-paper
+.codex/config.toml     Codex main-agent MCP wiring: danus · write-paper · human-summary
 bin/ scripts/ config/  runtime layer (wrappers, bootstrap/services/doctor, env templates)
 docs/                  human docs: getting started · concepts · operating guide · security & trust · …
 examples/              unattended-ops examples + a toy project
@@ -121,18 +114,18 @@ cp config/codex.env.example config/codex.env      # BYO OpenAI-compatible endpoi
 bash scripts/doctor.sh
 bash scripts/services.sh up verify
 
-# 4. connect Claude Code rooted at this repo dir; on first run it runs `initialize`.
-#    --dangerously-skip-permissions lets the main agent operate autonomously (no
+# 4. start Codex rooted at this repo dir; on first run it runs `initialize`.
+#    --dangerously-bypass-approvals-and-sandbox lets the main agent operate autonomously (no
 #    per-action permission prompts). That is the intended mode, but it means the
 #    agent acts with your shell privileges — run Danus on an isolated, disposable
 #    host, and read docs/security-and-trust.md first.
-claude --dangerously-skip-permissions
+codex --dangerously-bypass-approvals-and-sandbox
 ```
 
-Everything runs on your own keys (BYO). Workers and the verifier run on your codex
-backend; the strategy consult runs on a top-tier reasoning model over the `gpt_pro`
-transport (paid), `claude_api` (the Anthropic API, per-token), or `claude_code`
-(your Claude subscription), or `off` to skip it.
+Workers, the verifier, authoring, and the resident main agent run on the configured
+Codex runtime. The deployment default strategy consult is `gpt-5.6-sol` over
+direct ChatGPT-OAuth `codex_cli` with full permission and no CC Switch; paid API,
+Claude, and `off` transports remain explicit alternatives.
 
 **Notes**
 

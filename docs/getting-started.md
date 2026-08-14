@@ -49,16 +49,19 @@ Then pick your **codex backend** (workers + verifier):
 
 - **API key (recommended, no login):** in `config/codex.env` set
   `CODEX_BACKEND=api`, `CODEX_API_BASE_URL=<your OpenAI-compatible endpoint>`,
-  `CODEX_API_MODEL=gpt-5.5`, `DANUS_CODEX_API_KEY=<your key>`. Then
+  `CODEX_API_MODEL=gpt-5.6-sol`, `DANUS_CODEX_API_KEY=<your key>`. Then
   `bash scripts/setup-codex.sh api` (bootstrap already did this if the key was
   present) writes the provider — the key is read from the env var at run time, never
   stored in a config file.
-- **ChatGPT subscription:** in `config/danus.env` set `CODEX_BACKEND=chatgpt`, then
-  `bash scripts/setup-codex.sh login` and follow the device-auth flow.
+- **ChatGPT subscription:** in `config/codex.env` set `CODEX_BACKEND=chatgpt`, then
+  `bash scripts/setup-codex.sh login` and follow the device-auth flow. Once logged
+  in, `bash scripts/setup-codex.sh chatgpt` regenerates the direct, no-proxy,
+  full-permission project config without starting another login.
 
 And your **strategy consult transport** in `config/danus.env`
-(`DANUS_CONSULT_TRANSPORT`): `gpt_pro` (paid OpenAI-compatible, the default — fill
-`DANUS_CONSULT_API_KEY` / `_BASE_URL` / `_MODEL`), `claude_api` (the Anthropic API
+(`DANUS_CONSULT_TRANSPORT`): `codex_cli` (default; direct ChatGPT OAuth using
+`gpt-5.6-sol`, full permission, no CC Switch), `gpt_pro` (paid OpenAI-compatible —
+fill `DANUS_CONSULT_API_KEY` / `_BASE_URL` / `_MODEL`), `claude_api` (the Anthropic API
 via the native SDK — per-token billing to your `DANUS_CONSULT_CLAUDE_API_KEY`,
 cost metered from real usage), `claude_code` (your Claude
 subscription via the Claude Code CLI — no separate API key: each consult is metered
@@ -119,17 +122,17 @@ DANUS_ROOT=/home/you/Danus
   ok   verify service up :8091 (ours)
   warn no pdflatex on PATH (write-paper PDF render needs it; set TEX_ENGINE or install TeX)
   ok   chrome: /usr/bin/chromium-browser (human-summary PDF)
-consult transport: gpt_pro
+consult transport: codex_cli
 done.
 ```
 
 On the **api** backend the two codex lines instead read `codex backend: api provider
 configured` + `codex API live ping ok`.
 
-## 6. Connect Claude Code and initialize
+## 6. Connect Codex and initialize
 
-Connect Claude Code **rooted at this repo directory** (so `CLAUDE.md`, `.mcp.json`,
-and `.claude/skills/` load). On the **first** session, the main agent runs the
+Start Codex **rooted at this repo directory** (so `AGENTS.md`, `.codex/config.toml`,
+and `.agents/skills/` load). On the **first** session, the main agent runs the
 **`initialize`** skill: it interviews you (how to address you + language, git branch,
 spend ceiling, consult transport, codex backend), provisions `OPERATOR.md` +
 `config/danus.env`, brings up verify, and writes `runtime/.danus-initialized`.
