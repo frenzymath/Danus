@@ -55,12 +55,12 @@ def _project_env(tmp: Path):
 # --- parse_roles ----------------------------------------------------------- #
 
 def test_parse_roles_default_roster():
-    pairs = L.parse_roles("high:3,xhigh:4")
+    pairs = L.parse_roles("max:2,high:2")
     names = [n for n, _ in pairs]
-    assert names == ["high", "high2", "high3", "xhigh", "xhigh2", "xhigh3", "xhigh4"]
+    assert names == ["max", "max2", "high", "high2"]
     # base role (digits stripped) drives reasoning effort
-    assert [b for _, b in pairs] == ["high"] * 3 + ["xhigh"] * 4
-    assert dict(pairs)["high2"] == "high" and dict(pairs)["xhigh4"] == "xhigh"
+    assert [b for _, b in pairs] == ["max"] * 2 + ["high"] * 2
+    assert dict(pairs)["max2"] == "max" and dict(pairs)["high2"] == "high"
 
 
 def test_parse_roles_rejects_bad_specs():
@@ -174,10 +174,10 @@ def test_read_role_defaults_and_overrides(tmp: Path):
     wl = L.WorkerLayout(tmp / "proj" / "workers" / "xhigh")
     wl.dir.mkdir(parents=True)
     # no .role -> defaults (the neutral DANUS_CODEX_MODEL unset → the built-in
-    # gpt-5.5 default)
+    # gpt-5.6-sol default)
     with _env(DANUS_CODEX_MODEL=None):
         role = loop._read_role(wl)
-    assert role["MODEL"] == "gpt-5.5" and role["ROLE"] == "high" and role["DANUS_AUTHOR"] == "xhigh"
+    assert role["MODEL"] == "gpt-5.6-sol" and role["ROLE"] == "high" and role["DANUS_AUTHOR"] == "xhigh"
     # the neutral DANUS_CODEX_MODEL is the worker default when .role omits MODEL
     with _env(DANUS_CODEX_MODEL="neutral-model"):
         role = loop._read_role(wl)

@@ -214,8 +214,8 @@ _ROLE_RE = re.compile(r"^([A-Za-z][A-Za-z0-9_]*?):(\d+)$")
 
 
 def parse_roles(spec: str) -> List[Tuple[str, str]]:
-    """``"high:3,xhigh:4"`` -> ``[("high","high"), ("high2","high"),
-    ("high3","high"), ("xhigh","xhigh"), …]``. Returns (worker_name, base_role)
+    """``"max:2,high:2"`` -> ``[("max","max"), ("max2","max"),
+    ("high","high"), ("high2","high")]``. Returns (worker_name, base_role)
     pairs; the base role (digits stripped) drives the codex reasoning effort. The
     first worker of a base keeps the bare name; the rest get numeric suffixes.
     Raises ``ValueError`` on a malformed/empty spec or a count < 1."""
@@ -223,7 +223,7 @@ def parse_roles(spec: str) -> List[Tuple[str, str]]:
     for part in (p.strip() for p in spec.split(",") if p.strip()):
         m = _ROLE_RE.match(part)
         if not m:
-            raise ValueError(f"bad role spec {part!r}; want e.g. high:3,xhigh:4")
+            raise ValueError(f"bad role spec {part!r}; want e.g. max:2,high:2")
         base, count = m.group(1), int(m.group(2))
         if count < 1:
             raise ValueError(f"role count must be >= 1: {part!r}")

@@ -2,8 +2,8 @@
 
 Both ``danus.write_paper`` and ``danus.human_summary`` delegate the heavy
 generation (the full ``.tex`` / the report / the auditor report) to a local codex
-at extra-high (``xhigh``) reasoning, via the same codex-exec machinery the proving
-workers and the verify service use (all at the neutral ``xhigh`` default). The prompt is large (it embeds the style guide / writer prompt plus
+at maximum (``max``) reasoning, via the same codex-exec machinery the proving
+workers and the verify service use (all at the neutral ``max`` default). The prompt is large (it embeds the style guide / writer prompt plus
 the fact-graph content), so it goes on **stdin**, not argv — argv can't reliably
 hold it. codex's **stdout is the artifact**: the model emits the document, the
 driver captures it.
@@ -12,14 +12,13 @@ Isolation by construction: codex runs with ``cwd`` = a fresh empty
 ``tempfile.TemporaryDirectory()`` so it has nothing local to read. The prompt
 (assembled by each renderer's ``assemble.py``) already embeds everything the role
 needs — including ``AGENTS.md`` — so codex relies only on the embedded prompt, not
-on files it might discover on disk. NB: the ``--sandbox read-only`` flag bounds
-*writes*, not necessarily *reads*; the empty cwd + fully-embedded prompt are what
-actually give the isolation. If a future codex exposes a finer sandbox-root flag,
-prefer it.
+on files it might discover on disk. The operator has explicitly selected Codex
+full-permission mode for every workflow. Isolation therefore comes from the fresh
+empty cwd and fully embedded prompt, not from a filesystem sandbox.
 
 Two exec tails share this one driver (see ``run_codex``):
 
-- the **offline default** (writer / auditor / reviser) — ``--sandbox read-only``,
+- the **offline default** (writer / auditor / reviser) — full-permission Codex,
   no MCP, no web; the empty cwd + embedded prompt are the whole world;
 - the **networked variant** (the reference verifier) — mirrors
   ``danus.verify.launcher``: ``--dangerously-bypass-approvals-and-sandbox`` with
@@ -33,9 +32,9 @@ Config (env, read at CALL time — never import time; resolved via the shared
 ``danus.codex`` launcher):
   DANUS_CODEX_BIN     codex binary (alias: CODEX_BIN; default: the deployment's
                       bin/codex wrapper, else "codex" on PATH)
-  DANUS_CODEX_MODEL   neutral default model (default "gpt-5.5"); each renderer's
+  DANUS_CODEX_MODEL   neutral default model (default "gpt-5.6-sol"); each renderer's
                       server layers its own per-service override on top
-  DANUS_CODEX_EFFORT  neutral default reasoning effort (default "xhigh")
+  DANUS_CODEX_EFFORT  neutral default reasoning effort (default "max")
   timeout             default 7200s (0 = no timeout)
 """
 
@@ -95,14 +94,14 @@ def run_codex(
 
     Two mutually-exclusive tails, chosen by ``networked``:
 
-    - **Offline (default, ``networked=False``)** — the historical renderer path:
-      ``--sandbox read-only --skip-git-repo-check``, no MCP, no web. codex has an
-      empty cwd and a fully-embedded prompt, so it reads nothing and reaches
-      nothing. This is what the writer / auditor / reviser use.
+    - **Offline (default, ``networked=False``)** — full-permission Codex with
+      ``--skip-git-repo-check``, no MCP, and no web. Codex has an empty cwd and a
+      fully embedded prompt, so it has no project files to discover. This is what
+      the writer / auditor / reviser use.
 
     - **Networked (``networked=True``)** — the reference-verifier path, mirroring
-      ``danus.verify.launcher.build_codex_command``: replace the read-only sandbox
-      with ``--dangerously-bypass-approvals-and-sandbox`` (net-capable), inject the
+      ``danus.verify.launcher.build_codex_command``: keep the same full-permission
+      flag, inject the
       danus gateway via ``-c`` at ``DANUS_ROLE=<gateway_role>`` (default
       ``verifier`` — exposes ONLY ``search_arxiv_theorems``, minimum privilege; no
       new gateway role is created), and enable codex's built-in ``web_search``
@@ -121,7 +120,7 @@ def run_codex(
         )
     else:
         tail = (
-            "--sandbox", "read-only",
+            "--dangerously-bypass-approvals-and-sandbox",
             "--skip-git-repo-check",
             "-",  # read the prompt from stdin
         )

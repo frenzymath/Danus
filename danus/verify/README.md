@@ -5,7 +5,7 @@ authority on mathematical correctness: a worker's `fact_submit` (in `danus.gatew
 calls it, and the candidate fact is written to the fact graph **iff** this service
 returns `verdict: "correct"`.
 
-It is **not** a formal / Lean checker — a gpt-5.5 codex agent reads the
+It is **not** a formal / Lean checker — a gpt-5.6-sol Codex agent reads the
 natural-language markdown proof (logic, theorem application, external-citation
 checking) and returns a verdict. There is **no human in the loop by default** —
 research-level target theorems still need expert review before being trusted.
@@ -39,7 +39,7 @@ returns whatever the agent wrote; it does not recompute the verdict.
 - `prechecks.py` — pure, offline-testable: vacuousness + P1/P3/P5 hard prohibitions
   (all env-toggleable, all purely additive — they can only *reject* more).
 - `launcher.py` — cold-start codex launcher (via the shared `danus.codex`): `codex
-  exec --model gpt-5.5 --config model_reasoning_effort="xhigh" -C <AGENT_HOME>
+  exec --model gpt-5.6-sol --config model_reasoning_effort="max" -C <AGENT_HOME>
   -c <danus MCP, role=verifier> --dangerously-bypass-approvals-and-sandbox <prompt>`;
   atomic run-id; reads back `verification.json`. Injects the gateway as **`python
   -m danus.gateway`**.
@@ -66,7 +66,7 @@ environment.
 | `VERIFY_AGENT_HOME` | `<this dir>/agent` | the codex `-C` working dir (AGENTS.md + skills) |
 | `VERIFIER_RESULTS_DIR` | `<this dir>/runs` | per-verification run dirs (`log.md` + `verification.json`) |
 | `DANUS_CODEX_BIN` | `<repo>/bin/codex` → `which codex` → bare `"codex"` | the codex binary; resolved via the shared `danus.codex` launcher |
-| `DANUS_VERIFY_MODEL` / `DANUS_VERIFY_EFFORT` (fall back to neutral `DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT`) | `gpt-5.5` / `xhigh` | codex knobs |
+| `DANUS_VERIFY_MODEL` / `DANUS_VERIFY_EFFORT` (fall back to neutral `DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT`) | `gpt-5.6-sol` / `max` | Codex knobs |
 | `CODEX_TIMEOUT_SECONDS` | `0` lib / **`900`** via `python -m danus.verify` | per-verification codex timeout |
 | `VERIFY_MIN_STATEMENT_CHARS` / `VERIFY_MIN_PROOF_CHARS` / `VERIFY_MIN_PROOF_WORDS` | 10 / 30 / 5 | vacuousness thresholds |
 | `VERIFY_REJECT_PROBLEM_MD_CITATIONS` / `VERIFY_REJECT_UNPROVEN_CONDITIONALS` / `VERIFY_REJECT_VAGUE_GESTURES` | `1` | toggle P1 / P3 / P5 (`0` disables) |

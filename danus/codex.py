@@ -12,8 +12,8 @@ testable/reconfigurable.
 
 Env contract (neutral defaults + back-compat aliases):
   DANUS_CODEX_BIN     codex binary; back-compat alias: CODEX_BIN
-  DANUS_CODEX_MODEL   neutral default model (default "gpt-5.5")
-  DANUS_CODEX_EFFORT  neutral default reasoning effort (default "xhigh")
+  DANUS_CODEX_MODEL   neutral default model (default "gpt-5.6-sol")
+  DANUS_CODEX_EFFORT  neutral default reasoning effort (default "max")
 
 Each site layers its own per-service override env names on top of the neutral
 defaults via ``model(*overrides)`` / ``effort(*overrides)`` (e.g. the verify
@@ -32,8 +32,8 @@ from typing import Dict, List
 # lives at <repo>/bin/codex.
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
-DEFAULT_MODEL = "gpt-5.5"
-DEFAULT_EFFORT = "xhigh"
+DEFAULT_MODEL = "gpt-5.6-sol"
+DEFAULT_EFFORT = "max"
 
 
 def resolve_bin() -> str:

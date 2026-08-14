@@ -7,7 +7,7 @@ lives here.
 
 ```
 danus/execution/
-  layout.py     paths + names; WorkerLayout; parse_roles("high:3,xhigh:4")
+  layout.py     paths + names; WorkerLayout; parse_roles("max:2,high:2")
   scaffold.py   do_new (project + worker dirs, .codex config, symlinks), spawn_loop
   loop.py       the round loop: kickoff prompt, run_round, stop conditions, status
   __main__.py   `python -m danus.execution <worker_dir>` → loop.main

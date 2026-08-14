@@ -11,6 +11,7 @@ Behaviour (driven by markers in the stdin prompt, deterministic):
   - "[[FAKE:exit=N]]"  -> exit with code N (and empty stdout) — the honesty path
   - "[[FAKE:empty]]"   -> exit 0 with empty stdout            — the honesty path
   - "[[FAKE:cwd]]"     -> print the process cwd on stdout (for the cwd test)
+  - "[[FAKE:argv]]"    -> print the received argv as JSON (for flag tests)
   - otherwise          -> echo a tiny fixed .tex on stdout, exit 0
 
 Point the driver at it with DANUS_CODEX_BIN=/abs/path/to/fake_codex.py . It
@@ -18,6 +19,7 @@ accepts (and ignores) the real codex flags; the prompt arrives on stdin.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -46,6 +48,10 @@ def main() -> int:
 
     if "[[FAKE:cwd]]" in prompt:
         sys.stdout.write(os.getcwd())
+        return 0
+
+    if "[[FAKE:argv]]" in prompt:
+        sys.stdout.write(json.dumps(sys.argv[1:]))
         return 0
 
     # The default happy path: emit a tiny .tex, optionally carrying a GAP marker

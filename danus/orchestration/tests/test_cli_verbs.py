@@ -633,6 +633,7 @@ def test_build_parser_all_verbs():
     assert p.parse_args(["list", "--json"]).cmd == "list"
     a = p.parse_args(["new", "P", "--roles", "high:2", "--model", "m"])
     assert a.cmd == "new" and a.project == "P" and a.roles == "high:2" and a.model == "m"
+    assert p.parse_args(["new", "P"]).roles == "max:2,high:2"
     a = p.parse_args(["assign", "P/high", "--task", "t"])
     assert a.cmd == "assign" and a.target == "P/high" and a.task == "t"
     a = p.parse_args(["finalize", "P", "fact_a", "fact_b"])

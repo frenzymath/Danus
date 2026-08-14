@@ -16,7 +16,7 @@ danus/orchestration/
 | verb | does |
 |---|---|
 | `list [--json]` | projects + live worker counts + model |
-| `new <p> [--roles high:3,xhigh:4] [--model M]` | → `execution.scaffold.do_new` |
+| `new <p> [--roles max:2,high:2] [--model M]` | → `execution.scaffold.do_new` |
 | `assign <p>/<w> (--task/--file/--stdin)` | overwrite that worker's `TASK.md` |
 | `finalize <p> [<fact_id>…]` | record target(s) in `TARGET.md` (no id ⇒ suggest terminal facts); records only, does not stop workers |
 | `start <p>[/<w>]` | → `execution.scaffold.spawn_loop` (idempotent via `.pid.lock`) |

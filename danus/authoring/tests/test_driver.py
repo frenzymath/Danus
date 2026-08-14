@@ -9,6 +9,7 @@ Runs standalone (``python -m danus.authoring.tests.test_driver``) and under pyte
 
 from __future__ import annotations
 
+import json
 import os
 import stat
 import subprocess
@@ -85,8 +86,19 @@ def test_neutral_default_model_and_effort():
         assert driver.default_model() == "my-model"
         assert driver.default_effort() == "low"
     with env(DANUS_CODEX_MODEL=None, DANUS_CODEX_EFFORT=None):
-        assert driver.default_model() == driver.DEFAULT_MODEL == "gpt-5.5"
-        assert driver.default_effort() == driver.DEFAULT_EFFORT == "xhigh"
+        assert driver.default_model() == driver.DEFAULT_MODEL == "gpt-5.6-sol"
+        assert driver.default_effort() == driver.DEFAULT_EFFORT == "max"
+
+
+def test_all_authoring_paths_use_full_permission():
+    _ensure_fake_executable()
+    with env(DANUS_CODEX_BIN=str(FAKE)):
+        offline = driver.run_codex("[[FAKE:argv]]", timeout=60)
+        networked = driver.run_codex("[[FAKE:argv]]", timeout=60, networked=True)
+    for cp in (offline, networked):
+        argv = json.loads(cp.stdout)
+        assert "--dangerously-bypass-approvals-and-sandbox" in argv
+        assert "--sandbox" not in argv
 
 
 def test_resolve_bin_bare_name_resolved_via_which():
@@ -146,6 +158,8 @@ def main() -> None:
     print("  [ok] missing codex binary -> FileNotFoundError")
     test_neutral_default_model_and_effort()
     print("  [ok] neutral DANUS_CODEX_MODEL / DANUS_CODEX_EFFORT defaults")
+    test_all_authoring_paths_use_full_permission()
+    print("  [ok] offline + networked authoring both use full-permission Codex")
     test_resolve_bin_bare_name_resolved_via_which()
     print("  [ok] resolve_bin: bare name resolved via PATH (shutil.which)")
     test_resolve_bin_bare_name_not_on_path_falls_back_to_raw()

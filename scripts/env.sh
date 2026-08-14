@@ -38,9 +38,9 @@ export CODEX_HOME="${CODEX_HOME:-$DANUS_RUNTIME/codex-home}"
 export VERIFY_PORT="${VERIFY_PORT:-8091}"
 export DASHBOARD_PORT="${DASHBOARD_PORT:-8099}"
 export DANUS_VERIFY_URL="${DANUS_VERIFY_URL:-http://127.0.0.1:${VERIFY_PORT}/verify}"
-export DANUS_CODEX_MODEL="${DANUS_CODEX_MODEL:-${CODEX_API_MODEL:-gpt-5.5}}"   # neutral default model for every codex call (defers to the api backend model)
-export DANUS_CODEX_EFFORT="${DANUS_CODEX_EFFORT:-xhigh}"   # neutral default reasoning effort
-export DANUS_CONSULT_TRANSPORT="${DANUS_CONSULT_TRANSPORT:-gpt_pro}"   # gpt_pro | claude_api | claude_code | off
+export DANUS_CODEX_MODEL="${DANUS_CODEX_MODEL:-${CODEX_API_MODEL:-gpt-5.6-sol}}"   # neutral default model for every codex call
+export DANUS_CODEX_EFFORT="${DANUS_CODEX_EFFORT:-max}"   # neutral default reasoning effort
+export DANUS_CONSULT_TRANSPORT="${DANUS_CONSULT_TRANSPORT:-codex_cli}"   # codex_cli | gpt_pro | claude_api | claude_code | off
 export DANUS_CHROME_BIN="${DANUS_CHROME_BIN:-}"        # headless Chrome/Chromium for human-summary PDF (empty = auto-detect)
 export CODEX_BACKEND="${CODEX_BACKEND:-api}"            # api (BYO key) | chatgpt (your login)
 

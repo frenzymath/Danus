@@ -96,7 +96,7 @@ def test_model_override_wins_then_neutral_then_default():
     with env(**{**_ALL, "DANUS_CODEX_MODEL": "neutral-m"}):
         assert codex.model("DANUS_VERIFY_MODEL") == "neutral-m"
     with env(**_ALL):
-        assert codex.model("DANUS_VERIFY_MODEL") == codex.DEFAULT_MODEL == "gpt-5.5"
+        assert codex.model("DANUS_VERIFY_MODEL") == codex.DEFAULT_MODEL == "gpt-5.6-sol"
 
 
 def test_effort_override_wins_then_neutral_then_default():
@@ -105,7 +105,7 @@ def test_effort_override_wins_then_neutral_then_default():
     with env(**{**_ALL, "DANUS_CODEX_EFFORT": "neutral-e"}):
         assert codex.effort("DANUS_VERIFY_EFFORT") == "neutral-e"
     with env(**_ALL):
-        assert codex.effort("DANUS_VERIFY_EFFORT") == codex.DEFAULT_EFFORT == "xhigh"
+        assert codex.effort("DANUS_VERIFY_EFFORT") == codex.DEFAULT_EFFORT == "max"
 
 
 def test_first_override_in_order_wins():
