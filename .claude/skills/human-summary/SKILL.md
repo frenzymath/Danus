@@ -1,6 +1,6 @@
 ---
 name: human-summary
-description: Write a human-readable mathematical progress report (compiled PDF) on a project for the operator / the mathematician who posed the problem. This is NOT `elaboration` (dense input for the strategy consult) and NOT the dashboard. Render from the fact graph's verified statements/proofs into a clean, self-contained report — precise problem statement, essential partial results with REAL proof sketches, the one major obstacle, a neutral approach timeline, and the single remaining lemma written out in full — then output a compiled PDF.
+description: Write a human-readable mathematical progress report (compiled PDF) on a project for the operator / the mathematician who posed the problem. This is NOT `elaboration` (dense input for the strategy consult) and NOT the dashboard. Render from the fact graph's verified statements/proofs into a clean, self-contained report — precise problem statement, essential partial results with REAL proof sketches (model scope qualified), the one major obstacle, a neutral approach timeline, the single remaining lemma written out in full, plus a version line and a references section — then output a compiled PDF.
 ---
 
 # Human-readable progress report
@@ -29,9 +29,9 @@ summary_write(project="<project>")
 
 It assembles the writer prompt + `PROBLEM.md` + a scrubbed fact bundle
 (statement / proof / intuition bodies only — **all frontmatter stripped**, no fact
-ids, no author names, no machinery), drives an isolated codex, writes the result
-to `<project>/report/report.md`, and runs a **leak check** on the output. It
-returns a small dict:
+ids, no author names, no machinery) + the bundle date, drives an isolated codex,
+writes the result to `<project>/report/report.md`, and runs a **leak check** on
+the output. It returns a small dict:
 
 ```
 {report_md_path, status, returncode, leak_findings, stderr_tail}
@@ -52,8 +52,8 @@ You never read the fact graph and never write the report prose; the tool owns
 both. If the operator asks for a different language/register, that is a property
 of the writer prompt (`agents/skills/human-summary/REPORT_WRITER_PROMPT.md`,
 operator-editable) — the register rule (narrative in the operator's language,
-**all standard math terminology in English**) and the five-section structure are
-locked there, not here.
+**all standard math terminology in English**), the six-section structure, the
+version line, and the model-scope honesty rules are locked there, not here.
 
 ## Step 2 — render the PDF and deliver
 
@@ -64,9 +64,10 @@ bash "${CLAUDE_SKILL_DIR}/render_pdf.sh" <report.md> <out.pdf> "Title"
 ```
 
 This server-renders markdown + KaTeX into self-contained HTML and prints it to
-PDF via **headless Chrome** — so the math + fonts are handled without any LaTeX
-engine. **Deliver the PDF path** to the operator — never paste raw
-`$...$`/`\boxed{}` into chat; it shows as tex garbage and is unreadable.
+PDF via **headless Chrome** (no PDF header/footer) — so the math + fonts are
+handled without any LaTeX engine. **Deliver the PDF path** to the operator —
+never paste raw `$...$`/`\boxed{}` into chat; it shows as tex garbage and is
+unreadable.
 
 ## Step 3 — backstop self-check (documented, kept as defence-in-depth)
 
@@ -95,13 +96,21 @@ For reference — you do not enforce these, the isolated writer does:
    proof sketch) + the one major obstacle; omit resolved-worry episodes.
 4. **Fully self-contained statements** — every object introduced, every hypothesis
    quantified, every symbol defined.
-5. **Five sections:** precise problem statement · main mathematical progress
-   (proven / conditional) · main obstacle · neutral approach timeline · current
-   status & the single remaining lemma written out in full (boxed).
+5. **Six sections:** precise problem statement · main mathematical progress
+   (proven / conditional, model scope qualified) · main obstacle · neutral
+   approach timeline · current status & the single remaining lemma written out in
+   full (boxed, consistent with every bundle result) · references.
 6. **No numerical examples**; honest proven / conditional / conjecture marking.
 7. **No system / operational info** — reads as a clean standalone research report;
    no fact counts, no consult/`master_guidance`, no swarm/worker/verifier
-   vocabulary, blank author, no run timestamps.
+   vocabulary, blank author, no run timestamps; the ONLY date is the single
+   version line under the title (the bundle date given in the prompt).
+8. **Model-scope honesty.** Surrogate / reduced-model results are presented with
+   that qualification in heading and statement; they are never framed as the main
+   proof route to the posed problem unless a bundle result states the conclusion
+   for the actual empirical optimal assignment; the boxed remaining lemma must be
+   consistent with every bundle result (never a statement a verified result
+   contradicts).
 
 ## How this differs from `elaboration`
 
@@ -116,8 +125,9 @@ For reference — you do not enforce these, the isolated writer does:
 Run `human-summary` **on demand** (the operator asks for a report) or periodically
 as an operator update — it is separate from the strategy-consult cadence, and it
 never feeds the consult nor reads/writes global memory as truth. It is also **NOT
-`write-paper`**: no bibliography, no `external_refs`, no house style — a private
-progress report, not a publication artifact.
+`write-paper`**: a private progress report, not a publication artifact — its
+References section lists only the literature cited inside the bundle (no external
+reference ledger, no house style).
 
 ## Prerequisites for the render (declare them; the ops layer provisions them)
 

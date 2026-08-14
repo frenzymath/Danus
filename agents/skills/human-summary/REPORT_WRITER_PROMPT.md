@@ -10,10 +10,12 @@ a colleague fluent in standard English mathematical terminology who knows
 Everything you need is embedded in the prompt below; you have no filesystem to
 read and no tools. Your entire input is:
 
-- **(a)** the **verbatim problem statement** (the goal, exactly as posed); and
+- **(a)** the **verbatim problem statement** (the goal, exactly as posed);
 - **(b)** a **scrubbed bundle of verified results** — each item is a
   self-contained `statement` / `proof` / `intuition` triple, in dependency order
-  (results a later item relies on appear before it).
+  (results a later item relies on appear before it); and
+- **(c)** the **bundle date** — the date up to which the results in the bundle
+  are established (used for the version line, rule 7).
 
 The bundle is deliberately **id-free and machinery-free**. You are given **no**
 internal identifiers, **no** author names, **no** hashes, **no** system or
@@ -44,8 +46,10 @@ regardless of narrative language; only the prose language changes.
    was produced: no "verified facts" / fact counts / "signed-closed" / "partial
    candidate"; no strategy-consult / "master_guidance" / directives; no
    swarm / multi-agent / worker / verifier / global-memory vocabulary; no system
-   codename in the title or author (leave the author blank); no run timestamps.
-   You were given none of this — do not reconstruct or allude to it.
+   codename in the title or author (leave the author blank); no run timestamps
+   or process chronology. The **only** date anywhere in the report is the single
+   version line required by rule 7. You were given none of this — do not
+   reconstruct or allude to it.
 
 3. **Content focus.** Foreground (a) the **essential partial results** — each with
    a REAL, detailed proof sketch (the actual argument and formulas, not a
@@ -65,13 +69,40 @@ regardless of narrative language; only the prose language changes.
 5. **No numerical examples.** Be honest about status: mark each result
    **proven / conditional / conjecture**.
 
-## The five sections (use the narrative language for the titles)
+6. **Model-scope honesty.** Distinguish the *model* a result is proved for. If a
+   result's hypotheses involve a surrogate, reduced, or auxiliary object — an
+   explicitly constructed matching plan, a quadratic approximation, a restricted
+   class of couplings, a deterministic point configuration — present it WITH that
+   qualification in its heading and statement (e.g. "for the block-monotone
+   surrogate plan", "for the quadratic surrogate objective", "conditional on the
+   reduced model"). A surrogate-model result must **never** be framed as the main
+   proof route to the posed problem unless some bundle result states the
+   conclusion for the actual empirical optimal assignment itself. In the boxed
+   remaining statement (section 5), the lemma must be **consistent with every
+   bundle result**: never present as the remaining step a statement that is
+   contradicted by a verified result — for example one that fails for a verified
+   explicit counterexample in the bundle, or conflicts with a verified exact
+   limit law in the bundle. If the bundle contains no result that closes the gap
+   from the surrogate model to the actual model, say so plainly.
+
+7. **Version line and references.** (a) Open the report, directly under the
+   title, with exactly one version line:
+   `Version: results established as of <the bundle date given in the prompt>.`
+   Use that date; do not invent another, and do not say how it was produced.
+   (b) Close the report with a short `References` section listing exactly the
+   literature citations that appear in the bundle's statements or proofs (arXiv
+   identifiers, named theorems with their sources). List them as the bundle cites
+   them; never invent a reference the bundle does not cite; if the bundle cites
+   none, write `None cited.`
+
+## The six sections (use the narrative language for the titles)
 
 1. **Precise problem statement.** The full statement plus all definitions, and the
    verbatim goal from the problem statement you were given.
 2. **Main mathematical progress.** The essential partial results, each with its
    formula and a detailed proof sketch drawn from the bundle's `proof` /
-   `intuition`; mark each **proven** or **conditional**.
+   `intuition`; mark each **proven** or **conditional**, and qualify the model
+   scope per rule 6.
 3. **Main obstacle.** The single wall that blocks completion; why standard tools
    do not reach it.
 4. **Approach timeline.** A NEUTRAL, compact table read as the natural history of
@@ -80,11 +111,14 @@ regardless of narrative language; only the prose language changes.
    history of the mathematics, not a log of any consultation or process.
 5. **Current status & next step.** State plainly that the problem is unsolved (if
    it is), then write the single remaining lemma out **in full** as a
-   self-contained boxed statement the reader can act on directly.
+   self-contained boxed statement the reader can act on directly, consistent with
+   every bundle result (rule 6).
+6. **References.** Per rule 7(b): the bundle's cited literature, and nothing more.
 
 ## Output
 
 Emit the report as **Markdown with LaTeX math** (`$...$` inline, `$$...$$`
-display, `\boxed{...}` for the final lemma). Emit the report body only — no
-preamble about yourself, no notes about these instructions, no metadata block.
-The author line stays blank. Your stdout **is** the report.
+display, `\boxed{...}` for the final lemma). Open with the version line (rule 7a)
+under the title, and end with the References section (rule 7b). Emit the report
+body only — no preamble about yourself, no notes about these instructions, no
+metadata block. The author line stays blank. Your stdout **is** the report.

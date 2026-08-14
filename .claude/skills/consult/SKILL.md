@@ -1,6 +1,6 @@
 ---
 name: consult
-description: Consult a strong reasoning model for strategy — feed it the current elaboration, take its reply as the next master_guidance, and dispatch workers from it. This is the main agent's high-intelligence step (workers prove; the consult decomposes and steers). Runs over the gpt_pro transport (a paid API, default), the claude_api transport (the Anthropic API, per-token BYO key), or the claude_code transport (your Claude subscription); if no key/login is configured it degrades to off, where the main agent reasons on its own. Use it each strategic cycle, on events (a worker finished a round / real new progress), not a blind timer.
+description: Consult a strong reasoning model for strategy — send the current elaboration to a dedicated native Codex thread, take its reply as the next master_guidance, and dispatch workers from it. The deployment default is gpt-5.6-sol at max; the repository-local codex_cli wrapper and paid/Claude transports are fallbacks. Use it each strategic cycle, on events (a worker finished a round / real new progress), not a blind timer.
 ---
 
 # Consult for strategy
@@ -12,8 +12,8 @@ dispatch.** This is the strategic core of the loop: distil state (the
 workers from it.
 
 The consult is the **core direction-guidance mechanism** — it is how the swarm
-gets steered — and the **only step that costs money** (codex workers + the verify
-service are free). Treat it as central, not optional.
+gets steered — and consumes either ChatGPT quota or paid API spend, depending on
+transport. Treat it as central, not optional.
 
 ## When to consult (events, not a timer)
 
@@ -27,12 +27,15 @@ is genuinely new state to reason over:
 Do **not** re-consult when nothing material has changed since the last
 `master_guidance`. A sensible cadence is **at most once every ~2 hours** — a
 consult itself takes minutes, and you want real state to reason over, not churn.
-Drive cadence off main-agent events (or your own `/loop`), never a blind timer.
+Drive cadence off main-agent events, never a blind timer.
 
-**Spend discipline.** Each API consult costs money and accrues to the project's
-running total. Prefer `--effort high` (the workhorse); reserve `xhigh` for genuine
-forks. As project spend approaches the operator's ceiling, **surface it — that is a
-load-bearing fork** (see the main-agent contract).
+**Quota/spend discipline.** The default native Codex thread route consumes the
+operator's ChatGPT quota but does not expose metered token or price data. CLI
+subscription routes also consume ChatGPT quota; paid API transports accrue to
+the project's running total. The consultant runs `gpt-5.6-sol` at `max` reasoning
+effort; drop to `high` only when the endpoint rejects `max`. As project spend approaches the
+operator's ceiling, **surface it — that is a load-bearing fork** (see the
+main-agent contract).
 
 **Project start (no record, no direction yet):** do not launch blind. First
 **discuss the problem with both the model AND the human**, get direction from both
@@ -45,23 +48,41 @@ sides, then start the workers.
    synthesis, and publish it with `gm_add` (kind `elaboration`). That published
    document is the consult prompt — never consult on an empty or stale prompt.
 
-2. **Call the consult CLI** with the elaboration as input:
+2. **Use a dedicated native Codex consultant thread when thread tools are
+   available.** Create or reuse one thread for the project with model
+   `gpt-5.6-sol`, reasoning effort `max`, and the role contract in
+   `docs/agent-communication.md`. Send the complete published elaboration with
+   `codex_app__send_message_to_thread`, include the proof-main callback thread,
+   and require the consultant to send its complete reply directly back. The
+   consultant gives strategy only: it does not modify project state and its
+   reply is not verified fact.
+
+   Keep only thread identifiers and roles in
+   `runtime/projects/<project>/main-agent/thread-routing.json`; do not duplicate
+   the payload there. If native creation or delivery fails, record the exact
+   error and use the repository-local CLI fallback from the checkout root:
 
    ```bash
-   consult --file <elaboration.md> --project <project_dir> --out <reply.md>
+   ./bin/consult --file <elaboration.md> --project <project_dir> --out <reply.md>
    ```
 
-   - `consult` is the wrapper on PATH — it sources the deployment env and execs
-     the strategy consult CLI (in `danus/strategy`) with the right Python.
-   - **Transport** comes from config (`DANUS_CONSULT_TRANSPORT`, default `gpt_pro`); a
-     per-call override is `--transport gpt_pro|claude_api|claude_code|off`. `gpt_pro`
-     runs the paid OpenAI-compatible endpoint; `claude_api` runs the native Anthropic
+   - `./bin/consult` sources the deployment env and execs the strategy consult
+     CLI (in `danus/strategy`) with the right Python. Do not assume a bare
+     `consult` command is on a non-interactive Codex thread's `PATH`.
+   - **Transport** comes from config (`DANUS_CONSULT_TRANSPORT`, default `codex_cli`); a
+     per-call override is `--transport codex_cli|gpt_pro|claude_api|claude_code|off`.
+     `codex_cli` runs `gpt-5.6-sol` through direct ChatGPT OAuth in a throwaway cwd,
+     with full permission and API endpoint/key overrides scrubbed from the child
+     environment. It does not use CC Switch. `gpt_pro` runs a paid OpenAI-compatible
+     endpoint; `claude_api` runs the native Anthropic
      API (per-token, BYO key); `claude_code` runs the consult through the Claude Code
      CLI (`claude -p`); `off` short-circuits (see the `off` path below).
-   - **Effort** (`--effort high|xhigh|max`, default `high`): `high` is the
-     workhorse; reserve stronger levels for the hardest forks. All transports
-     support through `max`; on `gpt_pro`, `max` fails rather than silently running
-     without the requested reasoning effort when an endpoint rejects it.
+   - **Effort** (`--effort high|xhigh|max`, default `max`): the operator's
+     standing preference is `max` (consult model `gpt-5.6-sol` at max
+     reasoning effort); drop to `high` only when an endpoint rejects it. All
+     transports support through `max`; on `gpt_pro`, `max` fails rather than
+     silently running without the requested reasoning effort when an endpoint
+     rejects it.
    - `--project` records the spend: one line per call appended to
      `<project_dir>/spend/consult.jsonl`, and the CLI returns the running
      `project_total_usd`. **Always pass `--project`.**
@@ -96,8 +117,10 @@ sides, then start the workers.
           input_tokens=<usage.input>, output_tokens=<usage.output>, cost_usd=<cost_usd>)
    ```
 
-   The call's `input_tokens` / `output_tokens` / `cost_usd` from the envelope ride
-   as extra fields, so each consult's cost sits next to what it bought. The
+   For native thread messaging, set the unavailable usage fields and
+   `cost_usd` to zero and note in the evidence metadata that the call consumed
+   ChatGPT quota without metered usage. For the CLI fallback, use the response
+   envelope's `input_tokens` / `output_tokens` / `cost_usd`. The
    `master_guidance` schema (field names, `verifiable=false`) is owned by
    `danus/core` (`DATA_MODEL.md`) — honor it, don't re-specify it.
 
@@ -129,13 +152,17 @@ updates) is unchanged. This is a real fallback mode, not the default.
 
 ## Totaling spend
 
-The consult meters its own spend; codex workers and the verify service run
-separately on the operator's own codex backend. **Every** transport meters it:
-`gpt_pro`, `claude_api`, and `claude_code` each compute `cost_usd = input/output
+The CLI fallback logs every event; native thread consultations are represented
+by their linked `elaboration` and `master_guidance` entries because the app
+thread API does not expose metered usage. Codex workers and the verify service
+run separately on the operator's own Codex runtime. `codex_cli` uses ChatGPT
+OAuth: the plain CLI does not expose subscription token/pricing data, so it
+records zero token counts and `cost_usd=0` while still logging the event. Paid transports `gpt_pro`,
+`claude_api`, and `claude_code` compute `cost_usd = input/output
 tokens × per-1M rate` (`gpt_pro`: `DANUS_CONSULT_PRICE_IN`/`_OUT`; `claude_api`:
 `DANUS_CONSULT_CLAUDE_API_PRICE_IN`/`_OUT`, from the response's REAL usage; `claude_code`:
 `DANUS_CONSULT_CLAUDE_CODE_PRICE_IN`/`_OUT`
-— set these to your real model/plan rate; `off` is the only $0 transport). So
+— set these to your real model/plan rate; `off` is also $0). So
 **project spend = the sum of `cost_usd` over consult calls**, recorded in two places:
 
 - the **spend ledger** `<project>/spend/consult.jsonl` — one line per call
@@ -144,8 +171,10 @@ tokens × per-1M rate` (`gpt_pro`: `DANUS_CONSULT_PRICE_IN`/`_OUT`; `claude_api`
 - the **`master_guidance` entries** in global memory — each carries its call's
   `input_tokens` / `output_tokens` / `cost_usd`.
 
-**How you (main agent) check spend:** read `project_total_usd` from each consult's
-envelope (or sum `cost_usd` over `<project>/spend/consult.jsonl`). Report the
+**How you (main agent) check spend:** native thread calls have no local monetary
+total; report them as ChatGPT-quota consults. For CLI calls, read
+`project_total_usd` from each consult's envelope (or sum `cost_usd` over
+`<project>/spend/consult.jsonl`). Report the
 running total in your `spend` summary and warn the operator as it approaches their
 ceiling. The rates live in config (a rate change touches one env pair, not code).
 
@@ -156,7 +185,9 @@ events-not-a-timer, cost on every call, guidance-is-never-truth). Two more that
 belong nowhere else:
 
 - **One main agent at a time** owns `master_guidance` — do not race two.
-- **Setup:** the `gpt_pro` transport needs an OpenAI-compatible endpoint + key, and
+- **Setup:** native consultant threads and `codex_cli` need a valid ChatGPT login
+  under the deployment's
+  `CODEX_HOME`; the `gpt_pro` transport needs an OpenAI-compatible endpoint + key, and
   `claude_api` an Anthropic key (both BYO, in `config/danus.env` via the
   `DANUS_CONSULT_*` vars); `off` is a no-key degrade. If the
   key/quota is exhausted, that is an operator fork, not something to work around.

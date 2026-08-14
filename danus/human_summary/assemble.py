@@ -28,6 +28,7 @@ required file is read verbatim, in full, and a missing file fails loudly.
 
 from __future__ import annotations
 
+import datetime
 import os
 from pathlib import Path
 from typing import Dict, List
@@ -157,8 +158,9 @@ def fact_bundle(project_dir: Path) -> str:
 def build_prompt(project_dir: Path, language: str = "English") -> str:
     """Assemble the isolated report writer's full prompt: the fixed writer prompt
     (verbatim) + the project's verbatim ``PROBLEM.md`` + the scrubbed, id-free
-    fact bundle. The large bytes are assembled HERE, never in the main agent's
-    context; the writer codex sees only mathematics, no pipeline identifiers.
+    fact bundle + the bundle date (for the report's version line). The large
+    bytes are assembled HERE, never in the main agent's context; the writer
+    codex sees only mathematics, no pipeline identifiers.
 
     ``language`` names the narrative language for the report (the register rule:
     prose in this language, ALL standard math terminology in English). It is a
@@ -175,6 +177,8 @@ def build_prompt(project_dir: Path, language: str = "English") -> str:
         "ALL standard mathematical terminology in English regardless (never a "
         "native-language calque for an established term) — see the register rule in "
         "the writer prompt. The mathematics is identical in any language.",
+        f"\n\nBundle date (results established as of; use exactly this date in the "
+        f"report's version line): {datetime.date.today().isoformat()}.\n",
         section(WRITER_PROMPT_REL, _read_fixed(WRITER_PROMPT_REL)),
         section("PROBLEM.md (verbatim goal)", _read_project(project_dir, "PROBLEM.md")),
         section("VERIFIED_RESULTS (scrubbed, id-free)", fact_bundle(project_dir)),

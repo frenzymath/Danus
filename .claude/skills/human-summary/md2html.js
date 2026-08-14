@@ -42,7 +42,10 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:.9em;}
 pre{background:#f8fafc;border:1px solid #e2e8f0;padding:10px 12px;border-radius:6px;overflow-x:auto;}
 blockquote{border-left:3px solid #cbd5e1;margin:9px 0;padding:2px 14px;color:#475569;}
 table{border-collapse:collapse;margin:10px 0;font-size:10.5pt;} th,td{border:1px solid #cbd5e1;padding:5px 10px;text-align:left;vertical-align:top;} th{background:#f1f5f9;}
-.katex{font-size:1.04em;} .katex-display{margin:10px 0;overflow-x:auto;overflow-y:hidden;}
+.katex{font-size:1.04em;} .katex-display{margin:10px 0;overflow-x:auto;overflow-y:hidden;break-inside:avoid;page-break-inside:avoid;}
+h2,h3,h4{break-after:avoid;page-break-after:avoid;}
+p{orphans:3;widows:3;}
+table{break-inside:avoid;page-break-inside:avoid;}
 @page{margin:18mm 16mm;}`;
 const link = katexHref ? `<link rel="stylesheet" href="${katexHref}">` : '';
 const html = `<!doctype html><html><head><meta charset="utf-8">
