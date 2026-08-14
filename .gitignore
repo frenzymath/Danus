@@ -66,3 +66,11 @@ danus/verify/agent/
 # node deps provisioned by bootstrap.sh (human-summary PDF render: markdown-it/katex)
 .claude/skills/human-summary/node_modules/
 .claude/skills/human-summary/package-lock.json
+
+# --- Other-harness local config (machine-specific absolute paths; Kimi/Pi) ---
+.kimi-code/
+.pi/
+
+# --- Operator scratch notes ---
+notes.md
+task_plan.md
