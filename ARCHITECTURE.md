@@ -63,7 +63,7 @@ Danus/
 │  ├─ elaboration/  consult/  human-summary/  initialize/
 │  └─ write-paper/              the recipe SKILL.md + driver/ scripts + templates/
 ├─ bin/                         thin wrappers: danus · danus-mcp · write-paper-mcp · human-summary-mcp · codex · consult
-│                                + codex-dsh (dsh backend shim) · dsh (DeepSeek Harness CLI wrapper)
+│                                + codex-dsh (dsh exec shim) · dsh (DeepSeek Harness CLI wrapper)
 ├─ scripts/                     bootstrap · doctor · services · env · setup/check-codex · setup-dsh · start-verify/-dashboard · recover · install-tex
 ├─ docs/                        human docs: getting started · concepts · operating guide · security & trust · …
 └─ examples/                    unattended-ops examples + a toy project + dsh-integration (DeepSeek Harness seams)
@@ -71,23 +71,20 @@ Danus/
 
 ### dsh (DeepSeek Harness) integration — additive, opt-in
 
-Three optional seams; none replaces the OpenAI/Anthropic paths (defaults stay as
+Two optional seams; none replaces the OpenAI/Anthropic paths (defaults stay as
 before, each is selected by config — see `examples/dsh-integration/README.md`):
 
 - **exec backend** `CODEX_BACKEND=dsh`: `danus.codex.resolve_bin()` resolves
   `bin/codex-dsh`, which translates every uniform `codex exec` argv into one
   `dsh --profile headless "<task>"` session (DeepSeek models; per-run DSH_HOME
-  under `$DANUS_RUNTIME/dsh-runs/`; the role-gated gateway is mounted as an
-  mcp-client plugin; skills/contracts are embedded into the prompt by
-  `codex.dsh_context`; stdout + exit code follow the codex contract). Requires
+  under `$DANUS_RUNTIME/dsh-runs/`, reclaimed on exit; the role-gated gateway
+  is mounted as an mcp-client plugin; skills/contracts are embedded into the
+  prompt; stdout + exit code follow the codex contract). Requires
   `scripts/setup-dsh.sh`. The verifier's run dirs then default under the verify
   agent home (the headless session's writable workspace).
 - **consult transport** `dsh`: `DANUS_CONSULT_TRANSPORT=dsh` /
   `consult --transport dsh` runs the strategic consult as a headless session
-  (`danus.strategy.transport.DshTransport`).
-- **MCP in dsh profiles**: the danus/write-paper/human-summary gateways can be
-  registered in any dsh profile's `cordis.patch.yml` (template in
-  `examples/dsh-integration/`), giving dsh sessions the orchestration tools.
+  (`danus.strategy.transport.DshTransport`). Independent of `CODEX_BACKEND`.
 
 ---
 

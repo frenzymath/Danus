@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# bin/codex-dsh — the `dsh` codex backend shim.
+# bin/codex-dsh — the `dsh` proving-exec shim (DshAdapter's process wrapper).
 #
 # danus.codex.exec_cmd builds one uniform `codex exec` argv for every exec site
 # (worker rounds, the verify service, the artifact renderers). When the operator
@@ -22,13 +22,16 @@
 #     settings win (settings.yaml of ${DANUS_DSH_HOME:-$HOME/.dsh})
 #   - each run gets its own DSH_HOME under $DANUS_RUNTIME/dsh-runs/ (credentials
 #     + settings copied from the deployment home, model/effort overridden per
-#     call), so headless sessions never touch the operator's web profile state
+#     call). The directory is reclaimed on EXIT. SIGKILL cannot run traps, so
+#     a hard kill can still leave a home; SIGTERM/INT kill the child then reclaim.
 #   - stdout = the headless session's final answer (what `codex exec` prints);
 #     exit code passes through unchanged (0 = completed, non-zero = failure)
 # =============================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../scripts/env.sh" >/dev/null 2>&1 || true
+DSH_PY="$HERE/../danus/dsh.py"
+PY="${DANUS_PY:-python3}"
 
 if [ -z "${DANUS_DSH_BIN:-}" ] || [ ! -f "${DANUS_DSH_BIN}" ]; then
   echo "[codex-dsh] dsh not provisioned — run scripts/setup-dsh.sh (sets DANUS_DSH_BIN)" >&2
@@ -82,7 +85,7 @@ fi
 SRC_HOME="${DANUS_DSH_HOME:-$HOME/.dsh}"
 provider=""
 if [ -f "$SRC_HOME/settings.yaml" ]; then
-  provider="$(sed -n 's/^[[:space:]]*provider:[[:space:]]*//p' "$SRC_HOME/settings.yaml" | head -1)"
+  provider="$("$PY" "$DSH_PY" read-agent-default-key "$SRC_HOME/settings.yaml" provider || true)"
 fi
 provider="${provider:-${DANUS_DSH_PROVIDER:-deepseek-official}}"
 
@@ -92,7 +95,7 @@ if [ -z "$model_sel" ] && [ -n "$model_arg" ] && \
   model_sel="$model_arg"
 fi
 if [ -z "$model_sel" ] && [ -f "$SRC_HOME/settings.yaml" ]; then
-  model_sel="$(awk '/^[[:space:]]*agent-default-model:/{f=1} f&&/^[[:space:]]*model:/{print $2; exit}' "$SRC_HOME/settings.yaml")"
+  model_sel="$("$PY" "$DSH_PY" read-agent-default-key "$SRC_HOME/settings.yaml" model || true)"
 fi
 model_sel="${model_sel:-deepseek-v4-pro}"
 
@@ -110,10 +113,24 @@ fi
 
 # --- per-run DSH_HOME ---------------------------------------------------------
 RT="${DANUS_RUNTIME:-$DANUS_ROOT/runtime}"
-RUN_HOME="$RT/dsh-runs/$(date -u +%Y%m%dT%H%M%SZ)-$$"
-mkdir -p "$RUN_HOME"
+mkdir -p "$RT/dsh-runs"
+RUN_HOME="$(mktemp -d "$RT/dsh-runs/run.XXXXXX")"
+DSH_PID=""
+cleanup() {
+  if [ -n "${DSH_PID:-}" ]; then
+    kill "$DSH_PID" 2>/dev/null || true
+    wait "$DSH_PID" 2>/dev/null || true
+    DSH_PID=""
+  fi
+  rm -rf "$RUN_HOME"
+}
+trap cleanup EXIT
+trap 'exit 143' TERM INT
 [ -f "$SRC_HOME/.credentials.yaml" ] && cp "$SRC_HOME/.credentials.yaml" "$RUN_HOME/" || true
 [ -f "$SRC_HOME/settings.yaml" ] && cp "$SRC_HOME/settings.yaml" "$RUN_HOME/" || true
+if [ -f "$RUN_HOME/.credentials.yaml" ]; then
+  chmod 600 "$RUN_HOME/.credentials.yaml"
+fi
 if [ ! -f "$RUN_HOME/settings.yaml" ]; then
   printf 'agent-default-model:\n  provider: %s\n  model: %s\n' "$provider" "$model_sel" > "$RUN_HOME/settings.yaml"
 fi
@@ -125,40 +142,7 @@ if [ -z "${DANUS_DSH_EFFORT:-}" ] && ! grep -q 'reasoningEffort' "$SRC_HOME/sett
   effort_sel=""
 fi
 
-# Override the agent-default-model section (drop reasoningEffort when unset so
-# the model's own default applies). Line-based YAML edit: the section is flat.
-"${DANUS_PY:-python3}" - "$RUN_HOME/settings.yaml" "$provider" "$model_sel" "$effort_sel" <<'PY'
-import sys
-path, provider, model, effort = sys.argv[1], sys.argv[2], sys.argv[3], (sys.argv[4] if len(sys.argv) > 4 else "")
-try:
-    text = open(path, encoding="utf-8").read()
-except FileNotFoundError:
-    text = ""
-lines = text.splitlines()
-out, i, seen = [], 0, False
-while i < len(lines):
-    line = lines[i]
-    if line.strip() == "agent-default-model:":
-        out.append(line)
-        i += 1
-        while i < len(lines) and lines[i].startswith((" ", "\t")):
-            i += 1
-        out.append(f"  provider: {provider}")
-        out.append(f"  model: {model}")
-        if effort:
-            out.append(f"  reasoningEffort: {effort}")
-        seen = True
-        continue
-    out.append(line)
-    i += 1
-if not seen:
-    if out and out[-1] != "":
-        out.append("")
-    out += ["agent-default-model:", f"  provider: {provider}", f"  model: {model}"]
-    if effort:
-        out.append(f"  reasoningEffort: {effort}")
-open(path, "w", encoding="utf-8").write("\n".join(out) + "\n")
-PY
+"$PY" "$DSH_PY" rewrite-settings "$RUN_HOME/settings.yaml" "$provider" "$model_sel" "$effort_sel"
 
 # --- danus gateway MCP injection (headless has no codex -c) --------------------
 # codex mounts the role-gated danus gateway via `-c` (verify/renderers) or the
@@ -187,26 +171,24 @@ cat > "$RUN_HOME/profiles/headless/package.json" <<JSON
   "dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"] } }
 }
 JSON
-cat > "$RUN_HOME/profiles/headless/cordis.patch.yml" <<YAML
-# Auto-generated by bin/codex-dsh — mounts the role-gated danus gateway.
-- insert:
-    - id: mcp-danus-gateway
-      name: '@deepseek-ai/dsh-mcp-client'
-      config:
-        transport: stdio
-        serverName: danus
-        command: '$DANUS_ROOT/bin/danus-mcp'
-        args: []
-        env:
-          DANUS_ROLE: '$GW_ROLE'
-          DANUS_AUTHOR: '$GW_AUTHOR'
-          DANUS_PROJECT_DIR: '$GW_PROJECT'
-          DANUS_VERIFY_URL: '${DANUS_VERIFY_URL:-http://127.0.0.1:8091/verify}'
-        cwd: '$DANUS_ROOT'
-        toolCallTimeoutMs: 3600000
-        failOnStartupError: $GW_FAIL
-YAML
+"$PY" "$DSH_PY" write-gateway-patch \
+  --out "$RUN_HOME/profiles/headless/cordis.patch.yml" \
+  --role "$GW_ROLE" \
+  --author "$GW_AUTHOR" \
+  --project "$GW_PROJECT" \
+  --fail "$GW_FAIL" \
+  --root "$DANUS_ROOT" \
+  --verify-url "${DANUS_VERIFY_URL:-http://127.0.0.1:8091/verify}"
 
 # --- run one headless session; stdout + exit code pass through -----------------
+# Do not exec: the EXIT trap must run to reclaim RUN_HOME. Background the child
+# so TERM/INT can kill it, then reclaim.
 echo "[codex-dsh] DSH_HOME=$RUN_HOME model=$model_sel effort=${effort_sel:-default} gateway_role=$GW_ROLE" >&2
-exec env DSH_HOME="$RUN_HOME" "${DANUS_DSH_NODE:-node}" "$DANUS_DSH_BIN" --profile headless "$task"
+set +e
+env DSH_HOME="$RUN_HOME" "${DANUS_DSH_NODE:-node}" "$DANUS_DSH_BIN" --profile headless "$task" &
+DSH_PID=$!
+wait "$DSH_PID"
+rc=$?
+set -e
+DSH_PID=""
+exit "$rc"

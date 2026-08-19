@@ -5,7 +5,8 @@ the verify service in ``danus.verify.launcher``, and the one-shot artifact
 renderers in ``danus.authoring.driver``) resolves the codex binary, the model,
 the reasoning effort, the subprocess environment, and the ``exec`` command prefix
 **through this module** — so the four are uniform across the three sites and there
-is exactly one place to change any of them.
+is exactly one place to change any of them. ``CODEX_BACKEND`` selects an
+``AgentAdapter`` (``danus.harness``) for prompt shaping and argv.
 
 All config is read at CALL time (never import time), so services stay
 testable/reconfigurable.
@@ -28,7 +29,9 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Sequence
+
+from danus.harness import exec_backend, get_adapter
 
 # danus/codex.py → repo root is one parent up; the deployment's bin/codex wrapper
 # lives at <repo>/bin/codex.
@@ -47,7 +50,7 @@ def backend() -> str:
     the ``bin/codex-dsh`` shim (one ``dsh --profile headless`` run per
     ``codex exec`` call; the same argv + exit-code contract).
     """
-    return (os.environ.get("CODEX_BACKEND") or "api").strip().lower()
+    return exec_backend()
 
 
 def _resolve_override(override: str) -> str:
@@ -133,37 +136,21 @@ def exec_cmd(codex_bin: str, model: str, effort: str, *tail: str) -> List[str]:
     verbatim (each site keeps its own exact tail: sandbox flags, ``-C`` home,
     MCP ``-c`` injection, output path, the ``-`` stdin sentinel, the prompt, …).
     """
-    return [
-        codex_bin, "exec",
-        "--model", model,
-        "--config", f'model_reasoning_effort="{effort}"',
-        *tail,
-    ]
+    return get_adapter().exec_argv(codex_bin, model, effort, *tail)
 
 
-def dsh_context(prompt: str, *paths: Path) -> str:
-    """Embed a site's contract + skills into the prompt — for backend=``dsh``
-    only.
+def prepare_prompt(
+    prompt: str, *paths: Path, tools: Sequence[str] = (),
+) -> str:
+    """Ask the current AgentAdapter to shape the prompt.
 
-    The codex CLI auto-loads ``AGENTS.md`` from the working dir and discovers
-    skills under ``.agents/skills``; DeepSeek Harness headless has neither, so
-    the same files are appended verbatim as a bounded context block. Any other
-    backend gets the prompt back unchanged (codex reads the files itself).
-    Files are embedded whole; directories contribute every ``SKILL.md`` under
-    them in sorted order.
+    CodexAdapter returns ``prompt`` unchanged (the CLI loads AGENTS.md / skills
+    itself). DshAdapter embeds the given files/skills and, when ``tools`` is
+    non-empty, a short-name → ``mcp__danus__*`` footnote.
     """
-    if backend() != "dsh":
-        return prompt
-    blocks = [prompt]
-    for path in paths:
-        if path.is_file():
-            blocks.append(_dsh_block(path))
-        elif path.is_dir():
-            for skill in sorted(path.glob("**/SKILL.md")):
-                blocks.append(_dsh_block(skill))
-    return "\n\n".join(blocks)
+    return get_adapter().prepare_prompt(prompt, *paths, tools=tools)
 
 
-def _dsh_block(path: Path) -> str:
-    text = path.read_text(encoding="utf-8")
-    return f'<instructions name="{path.name}">\n{text}\n</instructions>'
+def dsh_context(prompt: str, *paths: Path, tools: Sequence[str] = ()) -> str:
+    """Back-compat alias for ``prepare_prompt``."""
+    return prepare_prompt(prompt, *paths, tools=tools)

@@ -11,8 +11,7 @@
 #
 # This is the prerequisite for CODEX_BACKEND=dsh (bin/codex-dsh) and the
 # `dsh` consult transport; the actual DeepSeek credentials + default model are
-# the deployment DSH home's (${DANUS_DSH_HOME:-$HOME/.dsh}, the same home the
-# `dsh web` GUI uses).
+# the deployment DSH home's (${DANUS_DSH_HOME:-$HOME/.dsh}).
 # =============================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -70,4 +69,4 @@ log "wrote $ENVF"
 
 log "done. The dsh backend is selected with CODEX_BACKEND=dsh (config/danus.env);"
 log "  the consult transport with DANUS_CONSULT_TRANSPORT=dsh. Credentials and"
-log "  default model come from ${DANUS_DSH_HOME:-$HOME/.dsh} (the dsh web home)."
+log "  default model come from ${DANUS_DSH_HOME:-$HOME/.dsh}."

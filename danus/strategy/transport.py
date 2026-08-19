@@ -16,13 +16,13 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
+
+from danus.harness import DshAdapter
 
 from .config import (
     ClaudeApiConfig, ConsultConfig, DshConfig,
@@ -711,14 +711,14 @@ class DshTransport(Transport):
     dsh CLI (``DANUS_DSH_BIN`` from scripts/setup-dsh.sh, else the repo's
     ``bin/dsh`` wrapper, else ``dsh`` on PATH).
 
-    Isolation (mirrors the codex-dsh backend): each consult runs under its own
+    Isolation (mirrors the proving DshAdapter): each consult runs under its own
     DSH_HOME in ``$DANUS_RUNTIME/dsh-runs/`` — credentials + settings copied
-    from the deployment home (``DANUS_DSH_HOME``, the same home ``dsh web``
-    uses), the ``agent-default-model`` section overridden per call (model =
-    ``DANUS_CONSULT_DSH_MODEL`` or the saved model; effort = the normalized
-    consult effort when the deployment's models carry a reasoning tier) — so
-    consults never touch the operator's web sessions. The task runs in a
-    throwaway cwd; stdout (the headless session's final answer) becomes the reply.
+    from the deployment home (``DANUS_DSH_HOME``), the ``agent-default-model``
+    section overridden per call (model = ``DANUS_CONSULT_DSH_MODEL`` or the
+    saved model; effort = the normalized consult effort when the deployment's
+    models carry a reasoning tier). Home lifecycle is ``DshAdapter.prepare_home``
+    / ``reclaim_home``. The task runs in a throwaway cwd; stdout (the headless
+    session's final answer) becomes the reply.
 
     Metering: headless reports no token usage, so usage/cost are ZERO unless the
     operator opts in with ``DANUS_CONSULT_DSH_PRICE_IN/_OUT`` (USD per 1M) —
@@ -741,74 +741,12 @@ class DshTransport(Transport):
         return subprocess.run(cmd, input=input, capture_output=True, text=True,
                               cwd=cwd, env=env, timeout=timeout)
 
-    # --- per-call home ------------------------------------------------------- #
-
-    def _read_setting(self, key: str) -> Optional[str]:
-        settings = Path(self.config.home) / "settings.yaml"
-        if not settings.is_file():
-            return None
-        for line in settings.read_text(encoding="utf-8").splitlines():
-            stripped = line.strip()
-            if stripped.startswith(key + ":"):
-                return stripped.split(":", 1)[1].strip()
-        return None
-
     def _prepare_home(self, effort: str) -> str:
-        repo_runtime = Path(__file__).resolve().parents[2] / "runtime"
-        runtime = Path(os.environ.get("DANUS_RUNTIME") or str(repo_runtime))
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        home = runtime / "dsh-runs" / f"consult-{stamp}-{os.getpid()}"
-        home.mkdir(parents=True, exist_ok=True)
-        src = Path(self.config.home)
-        creds = src / ".credentials.yaml"
-        if creds.is_file():
-            shutil.copy2(creds, home / ".credentials.yaml")
-        settings_src = src / "settings.yaml"
-        had_effort = False
-        if settings_src.is_file():
-            shutil.copy2(settings_src, home / "settings.yaml")
-            had_effort = "reasoningEffort" in settings_src.read_text(encoding="utf-8")
-        provider = self._read_setting("provider") or "deepseek-official"
-        model = self.config.model or self._read_setting("model") or "deepseek-v4-pro"
-        # Only write a reasoningEffort when the deployment home already carries
-        # one (its models support reasoning tiers); otherwise keep the default.
-        effort_out = effort if had_effort else ""
-        self._rewrite_agent_default_model(home / "settings.yaml", provider, model,
-                                          effort_out)
+        adapter = DshAdapter()
+        home = adapter.prepare_home(
+            Path(self.config.home), effort, model=self.config.model,
+        )
         return str(home)
-
-    @staticmethod
-    def _rewrite_agent_default_model(path: Path, provider: str, model: str,
-                                     effort: str) -> None:
-        try:
-            text = path.read_text(encoding="utf-8")
-        except FileNotFoundError:
-            text = ""
-        lines = text.splitlines()
-        out, i, seen = [], 0, False
-        while i < len(lines):
-            line = lines[i]
-            if line.strip() == "agent-default-model:":
-                out.append(line)
-                i += 1
-                while i < len(lines) and lines[i].startswith((" ", "\t")):
-                    i += 1
-                out.append(f"  provider: {provider}")
-                out.append(f"  model: {model}")
-                if effort:
-                    out.append(f"  reasoningEffort: {effort}")
-                seen = True
-                continue
-            out.append(line)
-            i += 1
-        if not seen:
-            if out and out[-1] != "":
-                out.append("")
-            out += ["agent-default-model:", f"  provider: {provider}",
-                    f"  model: {model}"]
-            if effort:
-                out.append(f"  reasoningEffort: {effort}")
-        path.write_text("\n".join(out) + "\n", encoding="utf-8")
 
     # --- the consult ---------------------------------------------------------- #
 
@@ -835,8 +773,17 @@ class DshTransport(Transport):
         }
 
     def consult(self, prompt, *, effort, tools, max_output_tokens, on_progress=None):
+        # max_output_tokens is part of the Transport contract. Headless has no
+        # CLI equivalent (no --max-output-tokens); output is bounded by max_wall
+        # and the adapter's configured maxTokens (default 256000). Unused on purpose.
         effort = _normalize_dsh_effort(effort)
         home = self._prepare_home(effort)
+        try:
+            return self._consult_in_home(prompt, effort=effort, home=home)
+        finally:
+            DshAdapter.reclaim_home(Path(home))
+
+    def _consult_in_home(self, prompt, *, effort, home):
         task = f"{ADVISOR_SYSTEM}\n\n{prompt}"
         # A raw bin.js path needs the node prefix; the repo wrapper (bin/dsh) or
         # a PATH-resolved dsh runs directly.

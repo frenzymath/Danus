@@ -68,6 +68,7 @@ def _src_home(tmp: Path, *, with_effort: bool = True) -> Path:
     (src / ".credentials.yaml").write_text("key: fake\n", encoding="utf-8")
     effort_line = "  reasoningEffort: max\n" if with_effort else ""
     (src / "settings.yaml").write_text(
+        "provider: decoy-provider\nmodel: decoy-model\n"
         "agent-default-model:\n  provider: deepseek-official\n"
         f"  model: deepseek-v4-pro\n{effort_line}", encoding="utf-8")
     return src
@@ -82,8 +83,16 @@ class _Recorder:
         self.calls = []
 
     def __call__(self, cmd, *, input, cwd, env, timeout):
+        home = Path(env.get("DSH_HOME", ""))
+        snap = {}
+        if home.is_dir():
+            cred = home / ".credentials.yaml"
+            settings = home / "settings.yaml"
+            snap["creds"] = cred.read_text(encoding="utf-8") if cred.is_file() else None
+            snap["settings"] = settings.read_text(encoding="utf-8") if settings.is_file() else None
+            snap["home"] = str(home)
         self.calls.append({"cmd": cmd, "input": input, "cwd": cwd, "env": env,
-                           "timeout": timeout})
+                           "timeout": timeout, "snap": snap})
         return types.SimpleNamespace(stdout=self.stdout, stderr="",
                                      returncode=self.returncode)
 
@@ -132,13 +141,19 @@ def test_dsh_transport_builds_cmd_and_home():
         assert call["cmd"][2:4] == ["--profile", "headless"]
         task = call["cmd"][4]
         assert "strategy advisor" in task and "elaboration text" in task
+        joined = " ".join(call["cmd"])
+        assert "max-output" not in joined and "max_tokens" not in joined
         # per-call DSH_HOME under $DANUS_RUNTIME/dsh-runs, creds + settings copied
         home = Path(call["env"]["DSH_HOME"])
         assert str(home).startswith(str(tmp / "runtime" / "dsh-runs" / "consult-"))
-        assert (home / ".credentials.yaml").read_text(encoding="utf-8") == "key: fake\n"
-        settings = (home / "settings.yaml").read_text(encoding="utf-8")
+        snap = call["snap"]
+        assert snap["creds"] == "key: fake\n"
+        settings = snap["settings"]
         assert "model: deepseek-v4-pro" in settings
+        assert "model: decoy-model" in settings          # decoy preserved
+        assert "provider: decoy-provider" in settings
         assert "reasoningEffort: max" in settings          # xhigh -> max
+        assert not home.exists()
         # ran in a throwaway cwd, not the caller's
         assert Path(call["cwd"]).name.startswith("danus-consult-dsh-")
 
@@ -152,12 +167,13 @@ def test_dsh_model_override_and_no_effort_when_source_lacks_it():
                         price_in=0.0, price_out=0.0)
         DshTransport(cfg, runner=rec).consult(
             "p", effort="high", tools="none", max_output_tokens=10)
-        home = Path(rec.calls[0]["env"]["DSH_HOME"])
-        settings = (home / "settings.yaml").read_text(encoding="utf-8")
+        snap = rec.calls[0]["snap"]
+        settings = snap["settings"]
         assert "model: deepseek-v4-flash" in settings
         # the source had no reasoningEffort -> none is written (model may not
         # support reasoning tiers)
         assert "reasoningEffort" not in settings
+        assert not Path(rec.calls[0]["env"]["DSH_HOME"]).exists()
 
 
 # --- failure envelopes -------------------------------------------------------- #
@@ -177,6 +193,9 @@ def test_dsh_timeout_envelope():
         assert env["status"] == "timeout"
         assert env["reply"] == ""
         assert env["seconds"] == 5.0
+        leftover = list((tmp / "runtime" / "dsh-runs").iterdir()) \
+            if (tmp / "runtime" / "dsh-runs").is_dir() else []
+        assert leftover == [], leftover
 
 
 def test_dsh_nonzero_exit_is_error():

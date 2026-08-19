@@ -79,16 +79,16 @@ def ensure_agent_home() -> Path:
 
 
 def _results_root() -> Path:
-    """Run dirs. The dsh backend defaults them under the agent home: the
-    headless session's writable workspace is its cwd (the agent home), and the
-    verifier contract has the agent write verification.json into the run dir,
-    so the two must nest. An explicit VERIFIER_RESULTS_DIR always wins."""
+    """Run dirs. An explicit VERIFIER_RESULTS_DIR always wins; otherwise the
+    current AgentAdapter chooses (DshAdapter nests them under the agent home
+    because headless can only write its cwd)."""
     env = os.getenv("VERIFIER_RESULTS_DIR")
     if env:
         return Path(env).resolve()
-    if codex.backend() == "dsh":
-        return (_agent_home() / "runs").resolve()
-    return Path(str(_HERE / "runs")).resolve()
+    return codex.get_adapter().verify_results_root(
+        agent_home=_agent_home(),
+        package_runs=_HERE / "runs",
+    )
 
 
 def _model() -> str:
@@ -160,16 +160,11 @@ def build_prompt(run_id: str, statement: str, proof: str) -> str:
         "Use AGENTS.md to verify the above proof for the statement. "
         f"Write the verification JSON to this exact path: {output_path}."
     )
-    if codex.backend() == "dsh":
-        prompt += (
-            "\n\nTool-name note (dsh backend): arXiv lookups are exposed as "
-            "mcp__danus__search_arxiv_theorems; the built-in web search is the "
-            "web_search tool."
-        )
-    return codex.dsh_context(
+    return codex.prepare_prompt(
         prompt,
         _REPO_ROOT / "agents" / "contracts" / "verifier.md",
         _REPO_ROOT / "agents" / "skills" / "verify",
+        tools=("search_arxiv_theorems",),
     )
 
 

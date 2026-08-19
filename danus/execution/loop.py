@@ -59,15 +59,11 @@ def kickoff(project: str, worker: str) -> str:
         f"5. Persist as you go: rough progress to local memory; shareable findings via "
         f"gm_add; any verified result via fact_submit."
     )
-    if codex.backend() == "dsh":
-        prompt += (
-            "\n\nTool-name note (dsh backend): the danus gateway tools are exposed "
-            "under prefixed names — gm_add -> mcp__danus__gm_add, gm_search -> "
-            "mcp__danus__gm_search, fact_search -> mcp__danus__fact_search, "
-            "fact_submit -> mcp__danus__fact_submit, search_arxiv_theorems -> "
-            "mcp__danus__search_arxiv_theorems."
-        )
-    return codex.dsh_context(prompt, L.worker_md(), L.worker_skills_dir())
+    return codex.prepare_prompt(
+        prompt, L.worker_md(), L.worker_skills_dir(),
+        tools=("gm_add", "gm_search", "fact_search", "fact_submit",
+               "search_arxiv_theorems"),
+    )
 
 
 # --- config (read at call time) -------------------------------------------- #

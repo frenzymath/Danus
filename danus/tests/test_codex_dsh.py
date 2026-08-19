@@ -24,9 +24,11 @@ import contextlib
 import json
 import os
 import shutil
+import signal
 import stat
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -93,6 +95,7 @@ def _dsh_stub(tmp: Path):
     src_home.mkdir()
     (src_home / ".credentials.yaml").write_text("key: fake\n", encoding="utf-8")
     (src_home / "settings.yaml").write_text(
+        "provider: decoy-provider\nmodel: decoy-model\n"
         "agent-default-model:\n  provider: deepseek-official\n  model: deepseek-v4-pro\n"
         "  reasoningEffort: max\n", encoding="utf-8")
     runtime = tmp / "runtime"
@@ -146,6 +149,7 @@ def test_worker_argv_positional_prompt():
     rec = _record(cp.stdout)
     assert rec["argv"] == ["--profile", "headless", "prove the theorem"]
     assert "model: deepseek-v4-pro" in rec["settings"]
+    assert "decoy-model" not in rec["settings"].split("agent-default-model:")[-1]
     assert "reasoningEffort: max" in rec["settings"]          # xhigh -> max
     assert "provider: deepseek-official" in rec["settings"]
     assert rec["creds"] == "key: fake\n"
@@ -218,8 +222,10 @@ def test_exit_code_passthrough():
                 "--config", 'model_reasoning_effort="high"',
                 "task", DANUS_RUNTIME=s["runtime"], DANUS_DSH_HOME=s["src_home"],
                 DANUS_DSH_BIN=s["stub"], FAKE_DSH_EXIT="7")
-    assert cp.returncode == 7
-    assert _record(cp.stdout)["argv"] == ["--profile", "headless", "task"]
+            assert cp.returncode == 7
+            assert _record(cp.stdout)["argv"] == ["--profile", "headless", "task"]
+            leftover = _leftover_run_homes(Path(s["runtime"]))
+            assert leftover == [], leftover
 
 
 def test_unsupported_flag_fails_loud():
@@ -245,6 +251,78 @@ def test_unprovisioned_dsh_exits_127():
     assert "not provisioned" in cp.stderr
 
 
+def _leftover_run_homes(runtime: Path) -> list:
+    root = runtime / "dsh-runs"
+    if not root.is_dir():
+        return []
+    return [p for p in root.iterdir() if p.is_dir()]
+
+
+def test_run_home_is_removed_after_exit():
+    with _tmpdir() as tmp, _no_runtime_env():
+        with _dsh_stub(tmp) as s:
+            cp = _run_shim(
+                "exec", "--model", "deepseek-v4-pro",
+                "--config", 'model_reasoning_effort="high"',
+                "task", cwd=s["worker_dir"],
+                DANUS_RUNTIME=s["runtime"], DANUS_DSH_HOME=s["src_home"],
+                DANUS_DSH_BIN=s["stub"])
+            assert cp.returncode == 0, cp.stderr
+            assert f'{s["runtime"]}/dsh-runs/' in cp.stderr
+            leftover = _leftover_run_homes(Path(s["runtime"]))
+            assert leftover == [], leftover
+
+
+def test_gateway_patch_escapes_apostrophe_in_author():
+    with _tmpdir() as tmp, _no_runtime_env():
+        with _dsh_stub(tmp) as s:
+            nasty = tmp / "workers" / "o'reilly"
+            nasty.mkdir(parents=True)
+            cp = _run_shim(
+                "exec", "--model", "deepseek-v4-pro",
+                "--config", 'model_reasoning_effort="high"',
+                "task",
+                cwd=nasty,
+                DANUS_RUNTIME=s["runtime"], DANUS_DSH_HOME=s["src_home"],
+                DANUS_DSH_BIN=s["stub"])
+    assert cp.returncode == 0, cp.stderr
+    rec = _record(cp.stdout)
+    assert "DANUS_AUTHOR: 'o''reilly'" in rec["patch"]
+    assert "DANUS_ROLE: 'worker'" in rec["patch"]
+
+
+def test_sigterm_reclaims_run_home():
+    """Worker terminate() sends SIGTERM to the shim; the EXIT trap must still
+    reclaim the per-run home (exec would have skipped the trap)."""
+    with _tmpdir() as tmp, _no_runtime_env():
+        with _dsh_stub(tmp) as s:
+            slow = tmp / "slow-dsh.py"
+            slow.write_text(
+                "#!/usr/bin/env python3\nimport time\ntime.sleep(30)\n",
+                encoding="utf-8")
+            slow.chmod(slow.stat().st_mode | stat.S_IXUSR)
+            py = os.environ.get("DANUS_PY") or "python3"
+            env = {
+                "CODEX_BACKEND": "dsh",
+                "DANUS_RUNTIME": str(s["runtime"]),
+                "DANUS_DSH_HOME": str(s["src_home"]),
+                "DANUS_DSH_NODE": py,
+                "DANUS_DSH_BIN": str(slow),
+                "PATH": os.environ.get("PATH", ""),
+            }
+            proc = subprocess.Popen(
+                [str(_SHIM), "exec", "--model", "deepseek-v4-pro",
+                 "--config", 'model_reasoning_effort="high"', "task"],
+                cwd=str(s["worker_dir"]), env=env,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            )
+            time.sleep(0.4)
+            proc.send_signal(signal.SIGTERM)
+            proc.wait(timeout=10)
+            leftover = _leftover_run_homes(Path(s["runtime"]))
+            assert leftover == [], leftover
+
+
 def main() -> None:
     tests = [
         test_worker_argv_positional_prompt,
@@ -253,6 +331,9 @@ def main() -> None:
         test_exit_code_passthrough,
         test_unsupported_flag_fails_loud,
         test_unprovisioned_dsh_exits_127,
+        test_run_home_is_removed_after_exit,
+        test_gateway_patch_escapes_apostrophe_in_author,
+        test_sigterm_reclaims_run_home,
     ]
     for t in tests:
         t()

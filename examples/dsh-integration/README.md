@@ -1,30 +1,25 @@
-# Danus × DeepSeek Harness (dsh) integration
+# Danus × DeepSeek Harness (dsh)
 
-Three optional, composable seams — all ADD to Danus, none replace the existing
+Two optional, composable seams — both ADD to Danus, none replace the existing
 OpenAI/Anthropic paths (each is selected by config; defaults stay as before):
 
-1. **MCP in the dsh web profile** — register the role-gated danus gateway (plus
-   write-paper / human-summary) in a dsh profile so dsh sessions get the Danus
-   orchestration tools (gm_add / gm_search / fact_search / fact_revoke /
-   search_arxiv_theorems). Run `bash scripts/apply-dsh-mcp.sh` (backs up the
-   current patch, writes the rows from `cordis.patch.yml.example`, validates
-   the composed profile, handshake-probes all three MCP servers), then restart
-   the dsh web server.
-2. **dsh codex backend** — `CODEX_BACKEND=dsh` (config/danus.env) turns every
+1. **dsh exec backend** — `CODEX_BACKEND=dsh` (config/danus.env) turns every
    `codex exec` (worker rounds, the verify service, paper/report renderers)
    into one `dsh --profile headless` session on DeepSeek models, via
-   `bin/codex-dsh`. No OpenAI key needed. Requires
-   `bash scripts/setup-dsh.sh` (installs @deepseek-ai/dsh under runtime/).
-3. **dsh consult transport** — `DANUS_CONSULT_TRANSPORT=dsh` (or
+   `bin/codex-dsh`. No OpenAI key needed. Requires `bash scripts/setup-dsh.sh`.
+2. **dsh consult transport** — `DANUS_CONSULT_TRANSPORT=dsh` (or
    `consult --transport dsh`) runs the strategic consult as a headless dsh
    session instead of gpt-5.5-pro / Claude.
+
+The role-gated danus gateway is mounted on each headless run by `bin/codex-dsh`.
+Danus does not register tools in a dsh web profile.
 
 ## Prerequisites
 
 - `bash scripts/setup-dsh.sh` — provisions the dsh CLI into runtime/ and writes
   `DANUS_DSH_NODE` / `DANUS_DSH_BIN` to runtime/runtime.env (idempotent).
 - DeepSeek credentials + the default model come from the deployment dsh home
-  (`DANUS_DSH_HOME`, default `$HOME/.dsh` — the same home `dsh web` uses).
+  (`DANUS_DSH_HOME`, default `$HOME/.dsh`).
 - Danus itself bootstrapped (`bash scripts/bootstrap.sh`) — the gateway MCPs
   need the venv / node toolchain.
 
@@ -43,8 +38,8 @@ OpenAI/Anthropic paths (each is selected by config; defaults stay as before):
   high, high -> high, xhigh/max -> max (`DANUS_DSH_EFFORT` overrides; the line
   is only written when the deployment home already carries a reasoning tier);
 - each run gets its own DSH_HOME under `$DANUS_RUNTIME/dsh-runs/` (credentials
-  + settings copied from the deployment home) — headless sessions never touch
-  the operator's web profile;
+  + settings copied from the deployment home) and is removed when the process
+  exits;
 - the role-gated danus gateway is mounted as an mcp-client plugin in the
   per-run headless profile (role from `-c`; workers default to
   role=worker/author=<worker-dir-name>/project=<grandparent-of-cwd>, since the
@@ -56,21 +51,25 @@ OpenAI/Anthropic paths (each is selected by config; defaults stay as before):
   home (the headless workspace); an explicit VERIFIER_RESULTS_DIR still wins.
 
 Known backend differences (documented, not hidden): the dsh session's file
-sandbox is its cwd, so the verify agent must write inside its home (handled by
-the default above); the authoring reference-verify path has no codex web_search
-tool (headless exposes its own `web_search`), and paper/report renderers run
-the same self-contained prompts with headless's native tools.
+sandbox confines writes to its cwd (reads are not confined). Shared-store
+writes go through MCP. The authoring reference-verify path has no codex
+web_search tool (headless exposes its own `web_search`).
 
 ## Consult transport
 
 `DANUS_CONSULT_TRANSPORT=dsh` + `bash scripts/setup-dsh.sh`. Each consult is a
-headless session in its own DSH_HOME under `$DANUS_RUNTIME/dsh-runs/`; the
-envelope is the pinned uniform shape. headless reports no token usage, so
-ledger metering is opt-in via `DANUS_CONSULT_DSH_PRICE_IN/_OUT` (char-based
-estimate) — off by default (honest $0 rather than fabricated numbers).
+headless session in its own DSH_HOME under `$DANUS_RUNTIME/dsh-runs/` (removed
+afterwards); the envelope is the pinned uniform shape. headless reports no
+token usage, so ledger metering is opt-in via `DANUS_CONSULT_DSH_PRICE_IN/_OUT`
+(char-based estimate) — off by default (honest $0 rather than fabricated
+numbers).
+
+`max_output_tokens` on the consult CLI is accepted (Transport contract) but
+not forwarded: `dsh --profile headless` has no output-token flag. Bound the
+session with `DANUS_CONSULT_DSH_MAX_WALL` instead.
 
 ## Tests
 
-- `python3 -m danus.tests.test_codex` — backend selection + dsh prompt embedding
+- `python3 -m danus.tests.test_codex` — backend selection + prompt embedding
 - `python3 -m danus.tests.test_codex_dsh` — the bin/codex-dsh translation shim
 - `python3 -m danus.strategy.tests.test_dsh_transport` — the dsh consult transport

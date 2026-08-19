@@ -229,7 +229,7 @@ class DshConfig:
     The CLI lives at ``DANUS_DSH_BIN`` (written by scripts/setup-dsh.sh), else
     the repo's ``bin/dsh`` wrapper, else ``dsh`` on PATH. Credentials +
     default model come from the deployment dsh home (``DANUS_DSH_HOME``, the
-    same home ``dsh web`` uses); ``model`` is None unless
+    default ``$HOME/.dsh``); ``model`` is None unless
     ``DANUS_CONSULT_DSH_MODEL`` overrides it (None = keep the saved model).
     """
 
