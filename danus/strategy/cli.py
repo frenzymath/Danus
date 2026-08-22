@@ -20,11 +20,13 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .config import (
-    load_claude_api_config, load_claude_code_config, load_config, resolve_transport,
+    load_claude_api_config, load_claude_code_config, load_config,
+    load_dsh_config, resolve_transport,
 )
 from .ledger import log_spend
 from .transport import (
-    ClaudeApiTransport, ClaudeCodeTransport, GptProTransport, OffTransport,
+    ClaudeApiTransport, ClaudeCodeTransport, DshTransport, GptProTransport,
+    OffTransport,
 )
 
 
@@ -112,11 +114,12 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--model", default=None,
                     help="override the consult model (api: any OpenAI-compatible id; "
                     "claude_api/claude_code: any Claude model, e.g. claude-fable-5 / claude-opus-4-8)")
-    ap.add_argument("--transport", choices=["gpt_pro", "claude_api", "claude_code", "off"], default=None,
+    ap.add_argument("--transport", choices=["gpt_pro", "claude_api", "claude_code", "dsh", "off"], default=None,
                     help="gpt_pro (the default, paid OpenAI-compatible), claude_api "
                     "(paid Anthropic API, BYO key), claude_code (your Claude "
-                    "subscription via the Claude Code CLI), or off (no-op short-circuit); "
-                    "falls back to $DANUS_CONSULT_TRANSPORT then gpt_pro")
+                    "subscription via the Claude Code CLI), dsh (DeepSeek Harness "
+                    "headless, the deployment's DeepSeek credentials), or off "
+                    "(no-op short-circuit); falls back to $DANUS_CONSULT_TRANSPORT then gpt_pro")
     ap.add_argument("--background", choices=["on", "off"], default=None,
                     help="(gpt_pro) send background=true; override for a gateway that "
                     "rejects it (default: DANUS_CONSULT_BACKGROUND, else on)")
@@ -207,6 +210,36 @@ def main(argv: Optional[list] = None) -> int:
                   file=sys.stderr, flush=True)
         if args.project:
             res["project_total_usd"] = log_spend(args.project, res)  # real usage × per-1M rate
+        if args.out:
+            _write_out(args.out, res)
+        print(json.dumps(res, ensure_ascii=False))
+        return 0 if res.get("status") == "completed" else 1
+
+    if transport_name == "dsh":
+        # DeepSeek Harness headless (the deployment's DeepSeek credentials). On
+        # failure we do NOT fall back to the paid gpt_pro — the caller (main
+        # agent) reasons on its own.
+        cfg = load_dsh_config()
+        if args.model:
+            cfg = replace(cfg, model=args.model)
+        if not (cfg.dsh_bin and (os.path.isfile(cfg.dsh_bin)
+                                 or shutil.which(cfg.dsh_bin))):
+            print(f"dsh CLI not found at '{cfg.dsh_bin}' (run scripts/setup-dsh.sh, "
+                  "or use --transport off)", file=sys.stderr, flush=True)
+            return 3
+        try:
+            res = DshTransport(cfg).consult(
+                prompt, effort=args.effort, tools=args.tools,
+                max_output_tokens=args.max_output_tokens,
+            )
+        except Exception as exc:  # noqa: BLE001 — an envelope, never a traceback
+            res = _failure_envelope("dsh", cfg.model, args.effort, exc)
+        if res.get("status") != "completed":
+            print(f"[consult] WARNING status={res.get('status')} (dsh transport did "
+                  "not complete; main agent should reason on its own)",
+                  file=sys.stderr, flush=True)
+        if args.project:
+            res["project_total_usd"] = log_spend(args.project, res)
         if args.out:
             _write_out(args.out, res)
         print(json.dumps(res, ensure_ascii=False))

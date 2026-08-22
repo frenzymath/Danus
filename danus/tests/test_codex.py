@@ -44,6 +44,7 @@ def env(**kv):
 # All env names the launcher consults — cleared as the baseline so ambient config
 # never leaks into a precedence assertion.
 _ALL = dict(
+    CODEX_BACKEND=None,
     DANUS_CODEX_BIN=None, CODEX_BIN=None,
     DANUS_CODEX_MODEL=None, DANUS_CODEX_EFFORT=None,
     DANUS_VERIFY_MODEL=None, DANUS_VERIFY_EFFORT=None,
@@ -157,6 +158,59 @@ def test_exec_cmd_empty_tail():
     assert cmd == ["codex", "exec", "--model", "m", "--config", 'model_reasoning_effort="e"']
 
 
+# --- backend selection + dsh prompt embedding ------------------------------- #
+
+def test_backend_defaults_to_api():
+    with env(**_ALL):
+        assert codex.backend() == "api"
+
+
+def test_backend_reads_codex_backend_env():
+    with env(**{**_ALL, "CODEX_BACKEND": "dsh"}):
+        assert codex.backend() == "dsh"
+    with env(**{**_ALL, "CODEX_BACKEND": "chatgpt"}):
+        assert codex.backend() == "chatgpt"
+
+
+def test_resolve_bin_dsh_backend_prefers_shim():
+    with env(**{**_ALL, "CODEX_BACKEND": "dsh"}):
+        got = codex.resolve_bin()
+        shim = Path(codex.__file__).resolve().parents[1] / "bin" / "codex-dsh"
+        assert got == str(shim)          # the repo ships bin/codex-dsh
+
+
+def test_resolve_bin_dsh_backend_honors_override():
+    # DANUS_CODEX_BIN still wins over the backend's own binary (tests rely on it)
+    with env(**{**_ALL, "CODEX_BACKEND": "dsh", "DANUS_CODEX_BIN": "/x/fake-dsh"}):
+        assert codex.resolve_bin() == "/x/fake-dsh"
+
+
+def test_dsh_context_unchanged_for_codex_backends():
+    prompt = "solve it"
+    with env(**_ALL):
+        assert codex.dsh_context(prompt) == prompt
+
+
+def test_dsh_context_embeds_files_and_skills_for_dsh_backend():
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        contract = root / "contract.md"
+        contract.write_text("CONTENT-CONTRACT", encoding="utf-8")
+        skill = root / "skills" / "a" / "SKILL.md"
+        skill.parent.mkdir(parents=True)
+        skill.write_text("CONTENT-SKILL-A", encoding="utf-8")
+        with env(**{**_ALL, "CODEX_BACKEND": "dsh"}):
+            out = codex.dsh_context("solve it", contract, root / "skills")
+        assert out.startswith("solve it")
+        assert "CONTENT-CONTRACT" in out
+        assert "CONTENT-SKILL-A" in out
+        assert out.count("<instructions") == 2
+        # other backends never embed
+        with env(**_ALL):
+            out = codex.dsh_context("solve it", contract, root / "skills")
+        assert out == "solve it"
+
+
 def main() -> None:
     tests = [
         test_resolve_bin_prefers_danus_codex_bin_over_alias,
@@ -170,6 +224,12 @@ def main() -> None:
         test_subprocess_env_idempotent_when_dir_already_on_path,
         test_exec_cmd_shape_quoted_effort_and_verbatim_tail,
         test_exec_cmd_empty_tail,
+        test_backend_defaults_to_api,
+        test_backend_reads_codex_backend_env,
+        test_resolve_bin_dsh_backend_prefers_shim,
+        test_resolve_bin_dsh_backend_honors_override,
+        test_dsh_context_unchanged_for_codex_backends,
+        test_dsh_context_embeds_files_and_skills_for_dsh_backend,
     ]
     for t in tests:
         t()

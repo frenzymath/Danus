@@ -12,7 +12,7 @@ danus/strategy/
   transport.py   the transports + the consult call, cost math, param step-down
   ledger.py      append-only spend ledger (<project>/spend/consult.jsonl) + running total
   __main__.py    `python -m danus.strategy` (what bin/consult execs)
-  tests/{test_strategy.py, test_claude_code_transport.py, test_claude_api_transport.py}
+  tests/{test_strategy.py, test_claude_code_transport.py, test_claude_api_transport.py, test_dsh_transport.py}
 ```
 
 ## Transports (`DANUS_CONSULT_TRANSPORT`)

@@ -79,7 +79,16 @@ def ensure_agent_home() -> Path:
 
 
 def _results_root() -> Path:
-    return Path(os.getenv("VERIFIER_RESULTS_DIR", str(_HERE / "runs"))).resolve()
+    """Run dirs. An explicit VERIFIER_RESULTS_DIR always wins; otherwise the
+    current AgentAdapter chooses (DshAdapter nests them under the agent home
+    because headless can only write its cwd)."""
+    env = os.getenv("VERIFIER_RESULTS_DIR")
+    if env:
+        return Path(env).resolve()
+    return codex.get_adapter().verify_results_root(
+        agent_home=_agent_home(),
+        package_runs=_HERE / "runs",
+    )
 
 
 def _model() -> str:
@@ -144,12 +153,18 @@ def _verification_path(run_id: str) -> Optional[Path]:
 
 def build_prompt(run_id: str, statement: str, proof: str) -> str:
     output_path = _results_dir(run_id) / VERIFICATION_FILENAMES[0]
-    return (
+    prompt = (
         f"Run_id: {run_id}. "
         f"Statement: {statement}. "
         f"Proof:\n{proof}\n\n"
         "Use AGENTS.md to verify the above proof for the statement. "
         f"Write the verification JSON to this exact path: {output_path}."
+    )
+    return codex.prepare_prompt(
+        prompt,
+        _REPO_ROOT / "agents" / "contracts" / "verifier.md",
+        _REPO_ROOT / "agents" / "skills" / "verify",
+        tools=("search_arxiv_theorems",),
     )
 
 

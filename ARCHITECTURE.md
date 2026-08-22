@@ -46,7 +46,7 @@ Danus/
 │  ├─ gateway/                  ⑥ role-gated MCP: 6 tools · role table (roles.py)
 │  ├─ verify/                   ④ verification HTTP service · prechecks · cold-start codex launcher
 │  ├─ execution/                ③ worker swarm: round loop · project/worker lifecycle + layout
-│  ├─ strategy/                 ② consult gateway (gpt_pro|claude_api|claude_code|off transport)
+│  ├─ strategy/                 ② consult gateway (gpt_pro|claude_api|claude_code|dsh|off transports)
 │  ├─ orchestration/            ① the `danus` CLI verbs
 │  ├─ integrations/             arXiv theorem search (Matlas)
 │  ├─ observability/            read-only dashboard
@@ -63,10 +63,28 @@ Danus/
 │  ├─ elaboration/  consult/  human-summary/  initialize/
 │  └─ write-paper/              the recipe SKILL.md + driver/ scripts + templates/
 ├─ bin/                         thin wrappers: danus · danus-mcp · write-paper-mcp · human-summary-mcp · codex · consult
-├─ scripts/                     bootstrap · doctor · services · env · setup/check-codex · start-verify/-dashboard · recover · install-tex
+│                                + codex-dsh (dsh exec shim) · dsh (DeepSeek Harness CLI wrapper)
+├─ scripts/                     bootstrap · doctor · services · env · setup/check-codex · setup-dsh · start-verify/-dashboard · recover · install-tex
 ├─ docs/                        human docs: getting started · concepts · operating guide · security & trust · …
-└─ examples/                    unattended-ops examples + a toy project
+└─ examples/                    unattended-ops examples + a toy project + dsh-integration (DeepSeek Harness seams)
 ```
+
+### dsh (DeepSeek Harness) integration — additive, opt-in
+
+Two optional seams; none replaces the OpenAI/Anthropic paths (defaults stay as
+before, each is selected by config — see `examples/dsh-integration/README.md`):
+
+- **exec backend** `CODEX_BACKEND=dsh`: `danus.codex.resolve_bin()` resolves
+  `bin/codex-dsh`, which translates every uniform `codex exec` argv into one
+  `dsh --profile headless "<task>"` session (DeepSeek models; per-run DSH_HOME
+  under `$DANUS_RUNTIME/dsh-runs/`, reclaimed on exit; the role-gated gateway
+  is mounted as an mcp-client plugin; skills/contracts are embedded into the
+  prompt; stdout + exit code follow the codex contract). Requires
+  `scripts/setup-dsh.sh`. The verifier's run dirs then default under the verify
+  agent home (the headless session's writable workspace).
+- **consult transport** `dsh`: `DANUS_CONSULT_TRANSPORT=dsh` /
+  `consult --transport dsh` runs the strategic consult as a headless session
+  (`danus.strategy.transport.DshTransport`). Independent of `CODEX_BACKEND`.
 
 ---
 

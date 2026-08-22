@@ -1,0 +1,75 @@
+# Danus × DeepSeek Harness (dsh)
+
+Two optional, composable seams — both ADD to Danus, none replace the existing
+OpenAI/Anthropic paths (each is selected by config; defaults stay as before):
+
+1. **dsh exec backend** — `CODEX_BACKEND=dsh` (config/danus.env) turns every
+   `codex exec` (worker rounds, the verify service, paper/report renderers)
+   into one `dsh --profile headless` session on DeepSeek models, via
+   `bin/codex-dsh`. No OpenAI key needed. Requires `bash scripts/setup-dsh.sh`.
+2. **dsh consult transport** — `DANUS_CONSULT_TRANSPORT=dsh` (or
+   `consult --transport dsh`) runs the strategic consult as a headless dsh
+   session instead of gpt-5.5-pro / Claude.
+
+The role-gated danus gateway is mounted on each headless run by `bin/codex-dsh`.
+Danus does not register tools in a dsh web profile.
+
+## Prerequisites
+
+- `bash scripts/setup-dsh.sh` — provisions the dsh CLI into runtime/ and writes
+  `DANUS_DSH_NODE` / `DANUS_DSH_BIN` to runtime/runtime.env (idempotent).
+- DeepSeek credentials + the default model come from the deployment dsh home
+  (`DANUS_DSH_HOME`, default `$HOME/.dsh`).
+- Danus itself bootstrapped (`bash scripts/bootstrap.sh`) — the gateway MCPs
+  need the venv / node toolchain.
+
+## How the dsh backend maps `codex exec`
+
+`danus.codex` is the single launcher (binary/model/effort/env/argv). With
+`CODEX_BACKEND=dsh` it resolves `bin/codex-dsh`, which translates the uniform
+`codex exec` argv into one `dsh --profile headless "<task>"` run:
+
+- flags with no headless equivalent are dropped (`-C`, `-c`, `--sandbox`,
+  `--skip-git-repo-check`, `--dangerously-bypass-approvals-and-sandbox`,
+  `--config` toggles); the remaining positional (or stdin `-`) is the task;
+- `--model` wins only when it names a deepseek-ish model; otherwise the dsh
+  home's saved model wins (`DANUS_DSH_MODEL` overrides);
+- effort maps onto DeepSeek's enum (off | high | max): minimal/low/medium ->
+  high, high -> high, xhigh/max -> max (`DANUS_DSH_EFFORT` overrides; the line
+  is only written when the deployment home already carries a reasoning tier);
+- each run gets its own DSH_HOME under `$DANUS_RUNTIME/dsh-runs/` (credentials
+  + settings copied from the deployment home) and is removed when the process
+  exits;
+- the role-gated danus gateway is mounted as an mcp-client plugin in the
+  per-run headless profile (role from `-c`; workers default to
+  role=worker/author=<worker-dir-name>/project=<grandparent-of-cwd>, since the
+  worker cwd is `<project>/workers/<name>`), so workers keep gm_add / gm_search /
+  fact_submit / fact_search and the verifier keeps
+  search_arxiv_theorems under the `mcp__danus__*` names;
+- stdout = the session's final answer, exit code passes through;
+- with the dsh backend the verifier's run dirs default under the verify agent
+  home (the headless workspace); an explicit VERIFIER_RESULTS_DIR still wins.
+
+Known backend differences (documented, not hidden): the dsh session's file
+sandbox confines writes to its cwd (reads are not confined). Shared-store
+writes go through MCP. The authoring reference-verify path has no codex
+web_search tool (headless exposes its own `web_search`).
+
+## Consult transport
+
+`DANUS_CONSULT_TRANSPORT=dsh` + `bash scripts/setup-dsh.sh`. Each consult is a
+headless session in its own DSH_HOME under `$DANUS_RUNTIME/dsh-runs/` (removed
+afterwards); the envelope is the pinned uniform shape. headless reports no
+token usage, so ledger metering is opt-in via `DANUS_CONSULT_DSH_PRICE_IN/_OUT`
+(char-based estimate) — off by default (honest $0 rather than fabricated
+numbers).
+
+`max_output_tokens` on the consult CLI is accepted (Transport contract) but
+not forwarded: `dsh --profile headless` has no output-token flag. Bound the
+session with `DANUS_CONSULT_DSH_MAX_WALL` instead.
+
+## Tests
+
+- `python3 -m danus.tests.test_codex` — backend selection + prompt embedding
+- `python3 -m danus.tests.test_codex_dsh` — the bin/codex-dsh translation shim
+- `python3 -m danus.strategy.tests.test_dsh_transport` — the dsh consult transport

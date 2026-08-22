@@ -198,6 +198,21 @@ def test_verification_path_found_and_absent():
             assert launcher._verification_path(rid).name == launcher.VERIFICATION_FILENAMES[0]
 
 
+def test_results_root_follows_adapter_when_unset():
+    with tempfile.TemporaryDirectory() as tmp:
+        home = Path(tmp) / "agent"
+        home.mkdir()
+        with _env(VERIFIER_RESULTS_DIR=None, VERIFY_AGENT_HOME=str(home),
+                  CODEX_BACKEND="dsh"):
+            assert launcher._results_root() == (home / "runs").resolve()
+        with _env(VERIFIER_RESULTS_DIR=None, VERIFY_AGENT_HOME=str(home),
+                  CODEX_BACKEND="api"):
+            assert launcher._results_root() == (launcher._HERE / "runs").resolve()
+        with _env(VERIFIER_RESULTS_DIR=str(Path(tmp) / "explicit"),
+                  VERIFY_AGENT_HOME=str(home), CODEX_BACKEND="dsh"):
+            assert launcher._results_root() == (Path(tmp) / "explicit").resolve()
+
+
 # --------------------------------------------------------------------------- #
 # run_codex_verification — success + every error mapping                      #
 # --------------------------------------------------------------------------- #

@@ -54,10 +54,12 @@ sides, then start the workers.
    - `consult` is the wrapper on PATH — it sources the deployment env and execs
      the strategy consult CLI (in `danus/strategy`) with the right Python.
    - **Transport** comes from config (`DANUS_CONSULT_TRANSPORT`, default `gpt_pro`); a
-     per-call override is `--transport gpt_pro|claude_api|claude_code|off`. `gpt_pro`
+     per-call override is `--transport gpt_pro|claude_api|claude_code|dsh|off`. `gpt_pro`
      runs the paid OpenAI-compatible endpoint; `claude_api` runs the native Anthropic
      API (per-token, BYO key); `claude_code` runs the consult through the Claude Code
-     CLI (`claude -p`); `off` short-circuits (see the `off` path below).
+     CLI (`claude -p`); `dsh` runs it as a DeepSeek Harness headless session (the
+     deployment's DeepSeek credentials; needs `bash scripts/setup-dsh.sh`);
+     `off` short-circuits (see the `off` path below).
    - **Effort** (`--effort high|xhigh|max`, default `high`): `high` is the
      workhorse; reserve stronger levels for the hardest forks. All transports
      support through `max`; on `gpt_pro`, `max` fails rather than silently running

@@ -19,10 +19,13 @@ import os
 import subprocess
 import tempfile
 import time
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from danus.harness import DshAdapter
+
 from .config import (
-    ClaudeApiConfig, ConsultConfig,
+    ClaudeApiConfig, ConsultConfig, DshConfig,
     DEFAULT_CLAUDE_CODE_PRICE_IN, DEFAULT_CLAUDE_CODE_PRICE_OUT,
 )
 
@@ -686,3 +689,121 @@ class ClaudeApiTransport(Transport):
                 continue
         assert last is not None
         raise last
+
+
+# ---- dsh transport (DeepSeek Harness headless, the deployment's DeepSeek auth) --
+
+
+# DeepSeek's reasoning-effort enum is off | high | max (there are no low/medium
+# tiers); the consult CLI's scale collapses onto it: anything below high -> high,
+# xhigh/max -> max.
+def _normalize_dsh_effort(effort: str) -> str:
+    if effort in ("minimal", "low", "medium", "high"):
+        return "high"
+    if effort in ("xhigh", "max"):
+        return "max"
+    raise ValueError(f"unsupported effort {effort!r} for the dsh transport")
+
+
+class DshTransport(Transport):
+    """Consult via DeepSeek Harness headless: one
+    ``dsh --profile headless "<task>"`` session on the deployment's provisioned
+    dsh CLI (``DANUS_DSH_BIN`` from scripts/setup-dsh.sh, else the repo's
+    ``bin/dsh`` wrapper, else ``dsh`` on PATH).
+
+    Isolation (mirrors the proving DshAdapter): each consult runs under its own
+    DSH_HOME in ``$DANUS_RUNTIME/dsh-runs/`` — credentials + settings copied
+    from the deployment home (``DANUS_DSH_HOME``), the ``agent-default-model``
+    section overridden per call (model = ``DANUS_CONSULT_DSH_MODEL`` or the
+    saved model; effort = the normalized consult effort when the deployment's
+    models carry a reasoning tier). Home lifecycle is ``DshAdapter.prepare_home``
+    / ``reclaim_home``. The task runs in a throwaway cwd; stdout (the headless
+    session's final answer) becomes the reply.
+
+    Metering: headless reports no token usage, so usage/cost are ZERO unless the
+    operator opts in with ``DANUS_CONSULT_DSH_PRICE_IN/_OUT`` (USD per 1M) —
+    the transport then meters a char-based estimate (len/4), like the
+    claude_code estimate path.
+
+    ``runner`` is injectable so tests can stub the subprocess with no real
+    ``dsh`` binary and no network.
+    """
+
+    name = "dsh"
+
+    def __init__(self, config: DshConfig,
+                 runner: Optional[Callable[..., Any]] = None):
+        self.config = config
+        self._runner = runner or self._default_runner
+
+    @staticmethod
+    def _default_runner(cmd, *, input, cwd, env, timeout):
+        return subprocess.run(cmd, input=input, capture_output=True, text=True,
+                              cwd=cwd, env=env, timeout=timeout)
+
+    def _prepare_home(self, effort: str) -> str:
+        adapter = DshAdapter()
+        home = adapter.prepare_home(
+            Path(self.config.home), effort, model=self.config.model,
+        )
+        return str(home)
+
+    # --- the consult ---------------------------------------------------------- #
+
+    def _envelope(self, *, reply: str, effort: str, seconds: float, status: str,
+                  prompt: str) -> Dict[str, Any]:
+        metering = self.config.price_in > 0 or self.config.price_out > 0
+        in_tok = len(prompt) // 4 if metering else 0
+        out_tok = len(reply) // 4 if metering else 0
+        cost = round(in_tok / 1e6 * self.config.price_in
+                     + out_tok / 1e6 * self.config.price_out, 4)
+        return {
+            "transport": "dsh",
+            "model": self.config.model,
+            "effort": effort,
+            "attempt": "dsh-headless",
+            "status": status,
+            "seconds": round(seconds, 1),
+            "usage": {"input": in_tok, "output": out_tok, "reasoning": None},
+            # char-based estimate; $0 unless DANUS_CONSULT_DSH_PRICE_* are set
+            "cost_usd": cost,
+            "tool_calls": [],
+            "reasoning_summary": "",
+            "reply": reply,
+        }
+
+    def consult(self, prompt, *, effort, tools, max_output_tokens, on_progress=None):
+        # max_output_tokens is part of the Transport contract. Headless has no
+        # CLI equivalent (no --max-output-tokens); output is bounded by max_wall
+        # and the adapter's configured maxTokens (default 256000). Unused on purpose.
+        effort = _normalize_dsh_effort(effort)
+        home = self._prepare_home(effort)
+        try:
+            return self._consult_in_home(prompt, effort=effort, home=home)
+        finally:
+            DshAdapter.reclaim_home(Path(home))
+
+    def _consult_in_home(self, prompt, *, effort, home):
+        task = f"{ADVISOR_SYSTEM}\n\n{prompt}"
+        # A raw bin.js path needs the node prefix; the repo wrapper (bin/dsh) or
+        # a PATH-resolved dsh runs directly.
+        prefix = [self.config.dsh_node] if self.config.dsh_bin.endswith(".js") else []
+        cmd = [*prefix, self.config.dsh_bin, "--profile", "headless", task]
+        env = {**os.environ, "DSH_HOME": home}
+        t0 = time.time()
+        # Neutral cwd: the advisor sees the task text and its own fresh home,
+        # nothing else.
+        with tempfile.TemporaryDirectory(prefix="danus-consult-dsh-") as cwd:
+            try:
+                proc = self._runner(cmd, input=None, cwd=cwd, env=env,
+                                    timeout=self.config.max_wall)
+            except subprocess.TimeoutExpired:
+                return self._envelope(reply="", effort=effort,
+                                      seconds=self.config.max_wall,
+                                      status="timeout", prompt=prompt)
+        dt = time.time() - t0
+        reply = (proc.stdout or "").strip()
+        status = "completed" if (proc.returncode == 0 and reply) else "error"
+        return self._envelope(reply=reply, effort=effort, seconds=dt,
+                              status=status, prompt=prompt)
+
