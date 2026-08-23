@@ -12,9 +12,10 @@ Danus orchestrates mathematical reasoning agents with fact-graph memory. A main
 agent (codex) steers a swarm of autonomous codex workers that prove; a
 cold-start verifier is the sole authority on correctness: a result becomes real
 only once it passes. Verified results accumulate in a content-addressed fact
-graph — the system's only source of truth — and a strategy loop (a strong
-reasoning model) decomposes the problem and steers the swarm. When you have the
-answer, Danus renders it into a human report or a publishable LaTeX paper.
+graph — the system's only source of truth — and the main agent decomposes the
+problem and steers the swarm, reasoning itself (optionally via exploratory codex
+subagents). When you have the answer, Danus renders it into a human report or a
+publishable LaTeX paper.
 
 Danus builds on the worker–verifier core of our earlier system
 [Rethlas](https://github.com/frenzymath/Rethlas)
@@ -32,7 +33,7 @@ The workers and the verifier always run on **codex**. The **main agent (the
 orchestrator)** can run on either runtime — pick one:
 
 - **Claude Code — recommended (the [`main` branch](https://github.com/frenzymath/Danus/tree/main)).**
-  Best results with **Fable (`claude-fable-5`)** as the orchestrator model. Requires
+  Best results with **Fable** as the orchestrator model. Requires
   the Claude Code CLI in addition to your codex backend.
 - **codex — for convenience (this branch, tag `v0.1.0-codex`).** The orchestrator
   runs on codex too, so you install **nothing beyond codex** — no Claude Code. Same
@@ -93,14 +94,13 @@ danus/                 the engine (installable Python package)
   verify/              cold-start proof-verifier HTTP service (the sole write-gate)
   execution/           worker swarm: the autonomous per-worker round loop + scaffolding
   orchestration/       the `danus` CLI verbs (list/new/assign/start/status/stop)
-  strategy/            consult gateway (elaboration → strong model → master_guidance)
   integrations/        arXiv theorem search
   observability/       read-only dashboard
   authoring/           shared one-shot isolated-codex driver for the two renderers below
   write_paper/         write-paper MCP service (fact graph → publishable LaTeX paper)
   human_summary/       human-summary MCP service (fact graph → progress-report PDF)
 agents/                codex agent contracts (main/worker/verifier) + worker & verify skills
-.agents/skills/         main-agent skills: elaboration · consult · human-summary · initialize · write-paper
+.agents/skills/         main-agent skills: elaboration · human-summary · initialize · write-paper
 bin/ scripts/ config/  runtime layer (wrappers, bootstrap/services/doctor, env templates)
 docs/                  human docs: getting started · concepts · operating guide · security & trust · …
 examples/              unattended-ops examples + a toy project
@@ -129,9 +129,9 @@ codex --dangerously-bypass-approvals-and-sandbox
 ```
 
 Everything runs on your own keys (BYO). Workers and the verifier run on your codex
-backend; the strategy consult runs on a top-tier reasoning model over the `gpt_pro`
-transport (paid), `claude_api` (the Anthropic API, per-token), or `claude_code`
-(your Claude subscription), or `off` to skip it.
+backend. The main agent steers by reasoning itself between rounds — optionally
+spawning exploratory codex subagents — and publishes its own periodic direction
+to the swarm as `master_guidance`.
 
 **Notes**
 

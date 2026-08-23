@@ -33,9 +33,11 @@ Config (env, read at CALL time — never import time; resolved via the shared
 ``danus.codex`` launcher):
   DANUS_CODEX_BIN     codex binary (alias: CODEX_BIN; default: the deployment's
                       bin/codex wrapper, else "codex" on PATH)
-  DANUS_CODEX_MODEL   neutral default model (default "gpt-5.5"); each renderer's
-                      server layers its own per-service override on top
-  DANUS_CODEX_EFFORT  neutral default reasoning effort (default "xhigh")
+  DANUS_MAIN_MODEL    neutral default model (default "gpt-5.6-sol"; back-compat
+                      alias DANUS_CODEX_MODEL); each renderer's server layers its
+                      own per-service override on top
+  DANUS_MAIN_EFFORT   neutral default reasoning effort (default "xhigh";
+                      back-compat alias DANUS_CODEX_EFFORT)
   timeout             default 7200s (0 = no timeout)
 """
 
@@ -65,14 +67,16 @@ def _gateway_config_arg(gateway_role: str) -> str:
 
 
 def default_model() -> str:
-    """The neutral default codex model (``DANUS_CODEX_MODEL``). Each renderer's
-    server resolves its own per-service override first and falls back to this."""
+    """The neutral default codex model (``DANUS_MAIN_MODEL``, back-compat alias
+    ``DANUS_CODEX_MODEL``). Each renderer's server resolves its own per-service
+    override first and falls back to this."""
     return codex.model()
 
 
 def default_effort() -> str:
-    """The neutral default reasoning effort (``DANUS_CODEX_EFFORT``). Each
-    renderer's server layers its own per-service override on top."""
+    """The neutral default reasoning effort (``DANUS_MAIN_EFFORT``, back-compat
+    alias ``DANUS_CODEX_EFFORT``). Each renderer's server layers its own
+    per-service override on top."""
     return codex.effort()
 
 

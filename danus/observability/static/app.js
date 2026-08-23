@@ -13,7 +13,7 @@ async function api(path) {
 function connError(on) { const b = $('#conn-banner'); if (b) b.hidden = !on; }
 
 // ---- markdown + math ----------------------------------------------------- //
-// elaboration / master_guidance / pro replies are markdown with LaTeX. Render
+// elaboration / master_guidance are markdown with LaTeX. Render
 // markdown, but PROTECT math spans first so markdown-it doesn't mangle _ * { }.
 let _md = null;
 function md() {
@@ -81,7 +81,6 @@ async function loadOverview() {
       ['Verified facts', d.facts, `${d.facts_with_predecessors} with predecessors`],
       ['Global-memory entries', Object.values(d.channel_counts).reduce((a, b) => a + b, 0), `${Object.keys(d.channel_counts).length} channels`],
       ['Verifier verdicts', (d.verdicts.correct || 0) + (d.verdicts.wrong || 0), `${d.verdicts.correct || 0} correct · ${d.verdicts.wrong || 0} wrong`],
-      ['Pro consults', d.consult_count, `$${d.consult_cost_usd} spent`],
     ];
     const c = $('#ov-cards'); c.innerHTML = '';
     for (const [k, v, sub] of cards) {

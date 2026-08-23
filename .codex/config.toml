@@ -1,29 +1,62 @@
-# Danus main-agent MCP wiring for codex (role=main). Mirrors the Claude-Code
-# .mcp.json: the same three bin/ wrappers, which source scripts/env.sh and exec
-# the right venv python — so DANUS_PY / DANUS_AGENTS_ROOT / DANUS_VERIFY_URL / PATH
-# are resolved at launch, not hard-coded here. tool_timeout matches the verify
-# HTTP timeout (a fact_submit can block on a minutes-long cold-start verify).
+# Danus main-agent Codex configuration (role=main). The three `./bin/*-mcp`
+# wrappers source scripts/env.sh and exec the right venv python, so DANUS_PY /
+# DANUS_AGENTS_ROOT / DANUS_VERIFY_URL / PATH are resolved at launch, not
+# hard-coded here. tool_timeout_sec is kept wide so a cold-start verify or a
+# long-paper verification returns its own honest verdict instead of being cut off.
+model = "gpt-5.6-sol"
+review_model = "gpt-5.6-sol"
+model_reasoning_effort = "ultra"
+disable_response_storage = true
+windows_wsl_setup_acknowledged = true
+
+[sandbox_workspace_write]
+network_access = true
+
+[features]
+goals = true
+
+# Main-thread wall-clock control. `clock.sleep` is a real, input-interruptible
+# wait; Goal continuity and timed wake-ups are deliberately separate mechanisms.
+# NOTE: this block requires a recent Codex build that ships the clock/sleep tools
+# and the `current_time_reminder` feature. On an older Codex that lacks them, the
+# timed-loop wording in AGENTS.md still applies via Goal continuity, but this
+# block has no effect (and can be omitted until such a Codex is pinned).
+[features.current_time_reminder]
+enabled = true
+reminder_interval_seconds = 1800
+clock_source = "system"
+delivery_mode = "after_user_or_tool_output"
+sleep_tool = true
 
 [mcp_servers.danus]
-command = "bin/danus-mcp"
-args = []
-tool_timeout_sec = 3600
+command = "./bin/danus-mcp"
+cwd = "."
+tool_timeout_sec = 100000
+
 [mcp_servers.danus.env]
 DANUS_ROLE = "main"
 DANUS_AUTHOR = "main_agent"
+DANUS_VERIFY_TIMEOUT = "90000"
 
 [mcp_servers.write-paper]
-command = "bin/write-paper-mcp"
-args = []
-tool_timeout_sec = 3600
+command = "./bin/write-paper-mcp"
+cwd = "."
+# The isolated authoring/verifier subprocess has a generous 86400s budget. Keep
+# the MCP envelope wider so long-paper verification returns its own honest
+# verdict/timeout instead of being cut off by the main-agent client.
+tool_timeout_sec = 100000
+
 [mcp_servers.write-paper.env]
 DANUS_ROLE = "main"
 DANUS_AUTHOR = "main_agent"
+DANUS_AUTHORING_TIMEOUT_SECONDS = "86400"
+DANUS_PAPER_VERIFY_WHOLE_DOC_CAP = "2000000"
 
 [mcp_servers.human-summary]
-command = "bin/human-summary-mcp"
-args = []
-tool_timeout_sec = 3600
+command = "./bin/human-summary-mcp"
+cwd = "."
+tool_timeout_sec = 100000
+
 [mcp_servers.human-summary.env]
 DANUS_ROLE = "main"
 DANUS_AUTHOR = "main_agent"

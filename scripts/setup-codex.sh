@@ -27,12 +27,12 @@ write_provider(){
 model_provider = "danus_api"
 
 [model_providers.danus_api]
-name = "Danus codex API (${CODEX_API_MODEL:-gpt-5.5})"
+name = "Danus codex API (${CODEX_API_MODEL:-gpt-5.6-sol})"
 base_url = "$CODEX_API_BASE_URL"
 env_key = "DANUS_CODEX_API_KEY"
 wire_api = "responses"
 EOF
-  echo "[setup-codex] wrote $CODEX_HOME/config.toml (provider danus_api -> $CODEX_API_BASE_URL, model ${CODEX_API_MODEL:-gpt-5.5})"
+  echo "[setup-codex] wrote $CODEX_HOME/config.toml (provider danus_api -> $CODEX_API_BASE_URL, model ${CODEX_API_MODEL:-gpt-5.6-sol})"
 }
 
 case "${1:-status}" in
@@ -54,7 +54,7 @@ case "${1:-status}" in
   status)
     echo "[setup-codex] CODEX_BACKEND=$CODEX_BACKEND  CODEX_HOME=$CODEX_HOME"
     if [ -f "$CODEX_HOME/config.toml" ] && grep -q danus_api "$CODEX_HOME/config.toml"; then
-      echo "  provider: danus_api ($CODEX_API_BASE_URL, ${CODEX_API_MODEL:-gpt-5.5})"
+      echo "  provider: danus_api ($CODEX_API_BASE_URL, ${CODEX_API_MODEL:-gpt-5.6-sol})"
     else
       echo "  provider: codex default (ChatGPT login) — $(env CODEX_HOME="$CODEX_HOME" "$DANUS_CODEX_BIN" login status 2>&1 | head -1)"
     fi

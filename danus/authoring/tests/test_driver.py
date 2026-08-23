@@ -81,11 +81,13 @@ def test_missing_binary_raises_filenotfound():
 
 def test_neutral_default_model_and_effort():
     # the shared driver reads the NEUTRAL env vars for its defaults
-    with env(DANUS_CODEX_MODEL="my-model", DANUS_CODEX_EFFORT="low"):
+    with env(DANUS_MAIN_MODEL=None, DANUS_CODEX_MODEL="my-model",
+             DANUS_MAIN_EFFORT=None, DANUS_CODEX_EFFORT="low"):
         assert driver.default_model() == "my-model"
         assert driver.default_effort() == "low"
-    with env(DANUS_CODEX_MODEL=None, DANUS_CODEX_EFFORT=None):
-        assert driver.default_model() == driver.DEFAULT_MODEL == "gpt-5.5"
+    with env(DANUS_MAIN_MODEL=None, DANUS_CODEX_MODEL=None,
+             DANUS_MAIN_EFFORT=None, DANUS_CODEX_EFFORT=None):
+        assert driver.default_model() == driver.DEFAULT_MODEL == "gpt-5.6-sol"
         assert driver.default_effort() == driver.DEFAULT_EFFORT == "xhigh"
 
 

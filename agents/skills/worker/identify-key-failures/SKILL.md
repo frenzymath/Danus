@@ -25,7 +25,7 @@ Read:
    - decomposition patterns that keep breaking
    - search gaps or missing background facts
 4. Summarize what the failures suggest for the next generation of decomposition plans.
-5. When all current decomposition plans have failed and no pattern is leading anywhere, publish the synthesized `dead_end` (below): the main agent reads it and consults for a fresh missing-mechanism or alternative direction (delivered as `master_guidance`), which the next planning round picks up.
+5. When all current decomposition plans have failed and no pattern is leading anywhere, publish the synthesized `dead_end` (below): the main agent reasons or launches exploratory subagents, then delivers a fresh direction as `master_guidance`.
 6. Save the synthesized failure knowledge to `failed_paths` so later planning skills can use it.
 7. After recording the failure synthesis, return control to `$propose-subgoal-decomposition-plans`.
 

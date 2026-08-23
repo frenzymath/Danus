@@ -1,7 +1,7 @@
 # danus/observability — the read-only dashboard
 
-A single self-contained **FastAPI** app that shows one project's verified-fact DAG,
-global-memory channels, and consult spend. **Strictly read-only and decoupled**: it
+A single self-contained **FastAPI** app that shows one project's verified-fact DAG
+and global-memory channels. **Strictly read-only and decoupled**: it
 imports no `danus.core` runtime module, only ever `read_text`s the on-disk stores,
 and tolerates partial/malformed data (the stores are appended while it reads).
 
@@ -15,7 +15,7 @@ danus/observability/
 
 ## Endpoints (all read-only)
 
-- `GET /api/overview` — counts, per-channel totals, verdict split, consult cost
+- `GET /api/overview` — counts, per-channel totals, verdict split
 - `GET /api/factgraph` — `{nodes, edges, max_depth}` (nodes carry statement/proof/
   intuition/predecessors/depth; deterministic sorted order)
 - `GET /api/channels` — per-kind counts

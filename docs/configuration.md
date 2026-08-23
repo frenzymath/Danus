@@ -20,47 +20,35 @@ The `bin/` wrappers source `env.sh` for you. Values below are the defaults from
 | `CODEX_BACKEND` | `api` | `api` (BYO OpenAI-compatible key) or `chatgpt` (your ChatGPT login) |
 | `CODEX_HOME` | `runtime/codex-home` | codex auth/config home (gitignored) |
 | `CODEX_API_BASE_URL` | — | (api) your OpenAI-compatible Responses endpoint |
-| `CODEX_API_MODEL` | `gpt-5.5` | (api) backend model |
+| `CODEX_API_MODEL` | `gpt-5.6-sol` | (api) backend model |
 | `DANUS_CODEX_API_KEY` | — | (api) key, **read at run time**, never stored in a file |
 
 These live in `config/codex.env`. See `getting-started.md` §2 and
 `scripts/setup-codex.sh`.
 
-## Strategy consult (the system's brain)
+### Per-project worker API override (optional, opt-in, Azure only)
 
-| variable | default | meaning |
-|---|---|---|
-| `DANUS_CONSULT_TRANSPORT` | `gpt_pro` | `gpt_pro` \| `claude_api` \| `claude_code` \| `off` |
-| `DANUS_CONSULT_API_KEY` | — | (gpt_pro) key for the OpenAI-compatible Responses API |
-| `DANUS_CONSULT_BASE_URL` | `https://api.openai.com/v1` | (gpt_pro) endpoint |
-| `DANUS_CONSULT_MODEL` | `gpt-5.5-pro` | (gpt_pro) model |
-| `DANUS_CONSULT_BACKGROUND` | `1` | (gpt_pro) send `background=true`; `0` for a gateway that rejects it (per-call: `--background off`) |
-| `DANUS_CONSULT_STORE` | `0` | (gpt_pro) send `store=false`; `1` for a gateway that requires stored responses (per-call: `--store on`) |
-| `DANUS_CONSULT_CLAUDE_CODE_MODEL` | `claude-fable-5` | (claude_code) model via the `claude` CLI |
-| `DANUS_CONSULT_CLAUDE_CODE_BIN` | `claude` | (claude_code) path to the CLI |
-| `DANUS_CONSULT_CLAUDE_CODE_MAX_WALL` | `1800` | (claude_code) hard wall-clock cap per consult (s) |
-| `DANUS_CONSULT_CLAUDE_CODE_PRICE_IN` | `10.0` | (claude_code) ledger estimate, USD per 1M input tokens |
-| `DANUS_CONSULT_CLAUDE_CODE_PRICE_OUT` | `50.0` | (claude_code) ledger estimate, USD per 1M output tokens |
-| `DANUS_CONSULT_CLAUDE_API_KEY` | — (falls back to `ANTHROPIC_API_KEY`) | (claude_api) BYO Anthropic API key |
-| `DANUS_CONSULT_CLAUDE_API_BASE_URL` | Anthropic default | (claude_api) only for a proxy |
-| `DANUS_CONSULT_CLAUDE_API_MODEL` | `claude-fable-5` | (claude_api) any Claude model |
-| `DANUS_CONSULT_CLAUDE_API_FALLBACK` | `claude-opus-4-8` | (claude_api) refusal-fallback model; `off` disables |
-| `DANUS_CONSULT_CLAUDE_API_PRICE_IN` | `10.0` | (claude_api) USD per 1M input tokens (real usage) |
-| `DANUS_CONSULT_CLAUDE_API_PRICE_OUT` | `50.0` | (claude_api) USD per 1M output tokens (real usage) |
+By default every codex call (workers, main agent, verifier, renderers) uses the
+backend above. You can optionally route **one project's worker rounds** to a
+separate Azure resource while everything else stays on the default backend. Put
+the following in gitignored `config/codex.env`, replacing `<PROJECT>` with the
+uppercased project name (non-alphanumeric runs → `_` — e.g. project `myproject`
+→ `MYPROJECT`):
 
-- `gpt_pro` = a paid, per-token OpenAI-compatible model. `claude_api` = the
-  Anthropic API via the native SDK (per-token, BYO key; cost from real usage).
-  `claude_code` = your Claude subscription via the Claude Code CLI (`claude -p`).
-  `off` = the main agent reasons on its own, no consult.
-- The `claude_code` consult runs **isolated**: a throwaway cwd, no settings and no MCP
-  servers loaded (`--setting-sources "" --strict-mcp-config` — needs a recent
-  `claude` CLI), web-only tools, and the prompt on stdin (never argv, which is
-  world-readable on a shared host). It sees the elaboration and the public web,
-  nothing else.
-- Consult effort is selected per call with `--effort`. Accepted values are
-  `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`. All transports support
-  through `max`; a `gpt_pro` `max` request is never silently retried without its
-  requested reasoning effort.
+| variable | meaning |
+|---|---|
+| `DANUS_PROJECT_<PROJECT>_WORKER_API_PROVIDER` | currently `azure` |
+| `DANUS_PROJECT_<PROJECT>_WORKER_API_BASE_URL` | Azure Responses base ending in `/openai` (e.g. `https://your.openai.azure.com/openai`) |
+| `DANUS_PROJECT_<PROJECT>_WORKER_API_VERSION` | Azure Responses API version |
+| `DANUS_PROJECT_<PROJECT>_WORKER_API_KEY` | project worker key; passed in the child environment only, never on argv |
+
+The override is **additive and fails closed**: a partial profile (some of the
+four set, some missing) is refused rather than silently falling back, and with no
+`DANUS_PROJECT_*` set worker launch is byte-identical to before. It affects only
+that project's worker rounds — the main agent, verifier, and renderers are
+untouched. Changing a profile requires restarting that project's worker loops;
+their mathematical continuity lives in local memory, global memory, and the fact
+graph.
 
 ## Models & reasoning effort
 
@@ -71,11 +59,16 @@ defaults apply everywhere; per-service overrides win.
 | variable | default | applies to |
 |---|---|---|
 | `DANUS_CODEX_BIN` | `<repo>/bin/codex`, else `codex` on PATH | all codex calls |
-| `DANUS_CODEX_MODEL` | `gpt-5.5` | neutral default (all sites) |
-| `DANUS_CODEX_EFFORT` | `xhigh` | neutral default effort (all sites) |
+| `DANUS_MAIN_MODEL` | `gpt-5.6-sol` | neutral default (all sites); back-compat alias `DANUS_CODEX_MODEL` |
+| `DANUS_MAIN_EFFORT` | `xhigh` | neutral default effort (all sites); back-compat alias `DANUS_CODEX_EFFORT` |
+| `DANUS_WORKER_MODEL` | neutral default | workers (falls back to `DANUS_MAIN_MODEL`) |
 | `DANUS_VERIFY_MODEL` / `_EFFORT` | neutral | verifier — the correctness authority; keep effort at `xhigh` |
 | `DANUS_WRITE_PAPER_MODEL` / `_EFFORT` | neutral | paper renderer |
 | `DANUS_HUMAN_SUMMARY_MODEL` / `_EFFORT` | neutral | human-summary renderer |
+
+The primary knobs are `DANUS_MAIN_MODEL` / `DANUS_MAIN_EFFORT`; the older
+`DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT` names are still honored as back-compat
+aliases.
 
 ## Ports (all loopback)
 

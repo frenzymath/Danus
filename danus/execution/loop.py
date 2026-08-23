@@ -64,13 +64,14 @@ def kickoff(project: str, worker: str) -> str:
 # --- config (read at call time) -------------------------------------------- #
 
 # codex binary + model/effort defaults are resolved via the shared danus.codex
-# launcher (DANUS_CODEX_BIN / DANUS_CODEX_MODEL / DANUS_CODEX_EFFORT).
+# launcher (DANUS_CODEX_BIN / DANUS_MAIN_MODEL / DANUS_MAIN_EFFORT); the worker's
+# own model comes from DANUS_WORKER_MODEL (falls back to the neutral default).
 
 
 # --- small helpers --------------------------------------------------------- #
 
 def _read_role(wl: L.WorkerLayout) -> dict:
-    out = {"MODEL": codex.model(),
+    out = {"MODEL": codex.model("DANUS_WORKER_MODEL"),
            "REASONING_EFFORT": "high", "ROLE": "high", "DANUS_AUTHOR": wl.name}
     rp = wl.role
     if rp.exists():
@@ -135,6 +136,9 @@ def run_round(wl: L.WorkerLayout, role: dict, prompt: str, log_path: Path,
     codex_bin = codex.resolve_bin()
     cmd = codex.exec_cmd(
         codex_bin, role["MODEL"], role["REASONING_EFFORT"],
+        # optional per-project worker-only model provider override (opt-in;
+        # empty unless DANUS_PROJECT_<PROJECT>_WORKER_API_* is configured)
+        *codex.project_worker_config_args(wl.project),
         "-C", str(wdir),
         # on an install without .git (tarball download), codex's
         # trusted-directory check refuses to run the worker round
@@ -147,7 +151,7 @@ def run_round(wl: L.WorkerLayout, role: dict, prompt: str, log_path: Path,
             _Child.proc = subprocess.Popen(
                 cmd, stdout=logf, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, cwd=str(wdir),
-                env=codex.subprocess_env(codex_bin),
+                env=codex.subprocess_env(codex_bin, worker_project=wl.project),
             )
         except FileNotFoundError:
             logf.write(f"[worker_loop] codex binary not found: {cmd[0]}\n")

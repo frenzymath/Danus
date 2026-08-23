@@ -95,7 +95,7 @@ not expose these to an untrusted network.)
 
 ## 6. Secrets: bring your own key, never committed
 
-- All credentials (codex backend key, consult key, LaTeX-git token) live **only** in
+- All credentials (codex backend key, LaTeX-git token) live **only** in
   gitignored `config/*.env` files. The tree ships `*.env.example` placeholders only —
   **no working key is committed.**
 - The codex backend key is **read at run time from an environment variable**; it is

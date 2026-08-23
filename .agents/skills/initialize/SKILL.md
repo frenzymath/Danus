@@ -1,6 +1,6 @@
 ---
 name: initialize
-description: First-run setup interview for a Danus deployment. Run it on the FIRST session, whenever runtime/.danus-initialized is absent or OPERATOR.md is still the blank template, or when the operator asks to set up / initialize / onboard / re-configure. It greets the operator, explains Danus, asks the two critical choices (codex backend, consult transport) plus a few free-text fields (how to address them, language, git branch, spend ceiling), then provisions everything (branch, config/danus.env, OPERATOR.md, codex login, verify service) and marks runtime/.danus-initialized. The system cannot run without these answers, so do not skip it.
+description: First-run setup interview for a Danus deployment. Run it on the FIRST session, whenever runtime/.danus-initialized is absent or OPERATOR.md is still the blank template, or when the operator asks to set up / initialize / onboard / re-configure. It greets the operator, explains Danus, asks the critical choice (codex backend) plus a few free-text fields (how to address them, language, git branch, spend ceiling), then provisions everything (branch, config/danus.env, OPERATOR.md, codex login, verify service) and marks runtime/.danus-initialized. The system cannot run without these answers, so do not skip it.
 ---
 
 # initialize — first-run setup interview
@@ -31,7 +31,7 @@ present? `OPERATOR.md` filled or still the template?
 
 ## 2. Ask the choices — as plain questions in the conversation
 
-Ask these two multiple-choice questions in the chat (state the options; put the
+Ask this multiple-choice question in the chat (state the options; put the
 recommended one first and label it). There is no popup — codex asks in plain text
 and reads the operator's reply:
 
@@ -39,37 +39,26 @@ and reads the operator's reply:
   - *OpenAI-compatible API key* (recommended): the key you place in
     `config/codex.env` — works immediately, no login.
   - *My own ChatGPT subscription*: device-code login.
-- **strategy consults transport** (the periodic high-intelligence steer) —
-  - *Paid OpenAI-compatible API key* (`gpt_pro`, recommended): a Responses endpoint.
-  - *Anthropic API key* (`claude_api`): the native Anthropic API, per-token.
-  - *Claude subscription* (`claude_code`): the Claude Code CLI's login; no separate key.
-  - *Off*: you reason on your own; no external consults.
 
 Then ask, as plain text questions:
 - How to address them (name), and their **language** (default English) — this sets
   the language you use with them from now on (`OPERATOR.md` records it).
 - The **git working branch** name (default `deploy/<operator-or-host>`).
-- If they chose the **paid-API** consult path: a **spend ceiling** (USD) to warn at.
+- If they chose the **paid-API** backend: a **spend ceiling** (USD) to warn at.
 
 ## 3. Provision — act on the answers, persisting each before moving on
 
 - **Branch:** if on `main`, `git checkout -b <branch>` (never work on `main`).
 - **Config:** `cp -n config/danus.env.example config/danus.env`; set `CODEX_BACKEND`
-  and `DANUS_CONSULT_TRANSPORT` (`gpt_pro` / `claude_api` / `claude_code` / `off`) to their choices. If the backend is
+  to their choice. If the backend is
   the OpenAI-compatible key, `cp -n config/codex.env.example config/codex.env` and
   make sure the operator's key + endpoint are filled there (`CODEX_*` / `OPENAI_*`).
   Never put secrets anywhere but `config/*.env`.
-- **OPERATOR.md:** fill name / language / consult transport / spend ceiling /
+- **OPERATOR.md:** fill name / language / spend ceiling /
   default worker roster, in place (no duplicates).
 - **codex:** backend=api → `bash scripts/check-codex.sh` (confirm reachable);
   backend=chatgpt → **you** run `bash scripts/setup-codex.sh login` and give the
   operator the printed URL + device code (they only open it and authorize).
-- **consult transport:** consult=gpt_pro or claude_api → verify the key actually resolves before
-  claiming it works: run one short `consult` test on the chosen transport (a single
-  bounded prompt, e.g. "Reply with one sentence confirming you can answer."; for
-  `claude_api` add `--effort low --tools none` to keep it cheap) and read the
-  envelope; `status:"completed"` with a non-empty `reply` ⇒ the api path works.
-  consult=off → nothing to wire.
 - **Services (must persist beyond your session — `services.sh` uses setsid):**
   `bash scripts/services.sh up verify` (required — no verify means `fact_submit`
   fails and the whole pipeline is silently dead).
@@ -81,7 +70,7 @@ Then ask, as plain text questions:
 
 ## 4. Hand off
 
-Summarize the chosen backend / transport, confirm the system is up, then ask
+Summarize the chosen backend, confirm the system is up, then ask
 for the **math problem** (or return to the operator's original request). When they
 give it, write `runtime/projects/<p>/PROBLEM.md` and begin the strategic loop.
 
@@ -96,7 +85,7 @@ voice** (see that folder's `README.md`; a complete paper is produced either way)
   (a key, a login), pause and ask rather than guessing.
 - **Verify, never claim unchecked.** Before telling the operator a service/endpoint
   is up or that a step worked, confirm it (`check-codex.sh` exits non-zero on ping
-  failure; the api consult test above; `doctor.sh` for the rest). A premature
+  failure; `doctor.sh` for the rest). A premature
   "it's up" that turns out to be a failure is exactly what to avoid.
 - **Never work on `main`** — branch first if on `main`.
 - **Secrets only in `config/*.env`** — never commit `config/*.env` or `runtime/`;

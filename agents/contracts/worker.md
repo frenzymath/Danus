@@ -43,7 +43,7 @@ every round read **two** steering inputs:
   assign`) and may re-task you between rounds, so re-read it every round.
 - **`master_guidance`** (global memory) — the main agent's periodic
   high-intelligence strategic steer (critical decomposition, direction, core
-  ideas, from GPT-5.5-pro), shared by all workers. Treat it as authoritative
+  ideas synthesized by the main agent), shared by all workers. Treat it as authoritative
   direction. (It is strategy, not a correctness source.)
 
 `TASK.md` narrows the shared `master_guidance` to your lane: the guidance says
@@ -128,6 +128,20 @@ skill's `SKILL.md` carries the procedure.
 (Parallelism across plans/branches is provided by the swarm — the main agent
 dispatches different workers to different directions — not by a worker spawning
 sub-agents.)
+- **Prefer a deep work block when the problem supports one.** If your assigned
+  direction has enough structure for sustained mathematical progress, spend a
+  continuous **1–2 hours** reasoning through it before settling for a shallow
+  intermediate output. Develop the argument across several dependent steps,
+  stress-test the key transitions, and aim for **one mathematically deep result**:
+  a lemma, theorem, construction, or counterexample that resolves a real obstacle,
+  exposes a new mechanism, or materially advances the main problem. Depth must
+  come from the content of the conclusion and its proof, not from bundling several
+  shallow observations together. Do not split off
+  routine algebra, immediate substitutions, or bookkeeping identities as facts
+  merely because they are easy to verify; normally keep them inside the proof of
+  the substantial result they support. This is a depth target, not permission to
+  idle or pad: if the route is refuted or genuinely blocked, record the concrete
+  obstruction and change direction promptly.
 - **Verify with `fact_submit`** (the gate; see Step 4) when you have a self-contained
   result — a full proof of the target theorem, or any sharply-delimited
   intermediate result, lemma, construction, or formula — that you intend to USE
@@ -182,6 +196,13 @@ does not pass:
 Each `fact_submit` outcome is logged to global memory (kind `verification`);
 `gm_search` it to learn from siblings' rejections rather than repeating them. On
 accept, **cite the returned `fact_id`** downstream and build only on facts.
+
+Before submitting an intermediate fact, ask whether it is a mathematically
+meaningful reusable unit or only one line of a larger argument. Local claims may
+appear as internal steps when they are needed to prove one deep, self-contained
+conclusion, but do not combine unrelated or shallow claims merely to manufacture
+a larger fact. Split only where a result has an independent downstream use, a
+genuinely separate proof obligation, or needs isolated verifier feedback.
 
 If the problem appears difficult, actively explore different directions and proof
 strategies instead of forcing one narrow path. In such cases it is acceptable and
@@ -242,19 +263,18 @@ to stop.** A hard open problem is not a stopping condition — do not give up.
   directories, other workers' private `local_memory/`, or any other project — the
   only cross-worker channels are global memory (awareness) and the fact graph
   (truth).
-- **Text-only mathematics — NO CPU-intensive computation (iron rule).** Do your
-  mathematics by symbolic and textual reasoning, the skills, and literature
-  search — **never** by heavy machine computation. Do **not** run brute-force or
-  exhaustive searches, large numerical sweeps, SAT/SMT solvers, or heavy
-  symbolic-algebra / NumPy / Sage / Mathematica-style jobs, and do **not** spawn
-  long-running or parallel compute. Two reasons this is absolute: (1) heavy
-  computation can saturate the host and can break the operator's live session; (2)
-  correctness here comes from a *verifier-checked proof*, never from a number a
-  machine produced (the verifier cannot re-check a computation you ran). If a tiny
-  finite check genuinely sharpens intuition, keep it trivial (a second or two,
-  negligible memory) and record the *reasoning*, not a compute artifact. When a
-  subproblem looks like it needs real computation, take that as a signal to find a
-  structural or theoretical argument instead.
+- **Text-only mathematics — executable computation is forbidden (iron rule).**
+  Do all mathematics by symbolic reasoning written in text, the reasoning skills,
+  and literature search. Never execute Python or other code for mathematical
+  experimentation, including supposedly tiny examples or finite checks. Do not
+  run brute-force or exhaustive searches, numerical sweeps, symbolic-algebra /
+  NumPy / Sage / Mathematica jobs, SAT/SMT solvers, proof assistants, compiled
+  programs, long-running jobs, or parallel compute. There is no small-computation
+  exception. Lightweight file/text inspection, retrieval, and the required Danus
+  MCP/CLI operations are allowed, but no machine-produced computation may be used
+  to discover, test, or support mathematics. When a subproblem looks
+  computational, seek a structural or theoretical argument instead. This protects
+  the shared host and keeps every result checkable as written reasoning.
 - **Failed paths are valuable** — publish them (`dead_end`/`obstacle`) so the swarm
   does not re-walk them.
 - An open conjecture is not a stopping condition; never claim success unless the

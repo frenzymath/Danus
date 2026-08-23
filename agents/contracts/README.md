@@ -6,13 +6,11 @@ the binding operating protocol, distinct from the on-demand skills under
 
 | File | Tier | Reads / writes |
 | --- | --- | --- |
-| `main_agent.md` | main agent (codex) | reads global memory + fact graph; writes `master_guidance` / `elaboration` (`gm_add`); `fact_revoke`; high-autonomy orchestration. NO `fact_submit`. |
+| `main_agent.md` | main agent (Codex, `ultra` effort) | reasons continuously, maintains rolling exploratory subagents, reads global memory + fact graph, writes `master_guidance` / `elaboration`, and orchestrates. NO `fact_submit`. |
 | `worker.md` | codex worker | local memory (private) · global memory (`gm_add` / `gm_search`) · fact graph (`fact_submit`); the adaptive proving loop. Loaded per round via the worker home's `AGENTS.md` symlink. |
 | `verifier.md` | codex verifier (verify service) | judges `{statement, proof}` → strict verdict; called by `fact_submit`; read-only (only `search_arxiv_theorems`); writes its verdict JSON directly to results/{run_id}/verification.json. |
 
-codex, the primary main agent, reads its condensed contract from
-the repo-root `AGENTS.md`; `main_agent.md` is the full contract and single source
-of truth (the two must not contradict).
+Codex auto-loads the repo-root `AGENTS.md`; this file expands the same boundaries.
 
 ## The shared spine
 
@@ -26,6 +24,10 @@ Consistent across all three tiers:
 - **Global memory** (incl. `master_guidance`) is shared awareness/strategy, never
   a correctness source — a proof builds only on `fact_id`s.
 - **The shared stores change only through the sanctioned MCP tools**, never by hand.
+- **All mathematical agents reason in text only** — no executable Python,
+  numerical/symbolic computation, brute force, solvers, proof assistants, or
+  parallel compute; lightweight reading, retrieval, and orchestration remain
+  allowed.
 
 ## Who binds to these files
 

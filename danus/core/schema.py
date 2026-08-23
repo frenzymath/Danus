@@ -32,7 +32,7 @@ GLOBAL_KINDS: Dict[str, bool] = {
     "dead_end": False,
     "direction": False,
     "obstacle": False,
-    "master_guidance": False,  # main agent, via GPT-5.5-pro (DATA_MODEL.md §2.3)
+    "master_guidance": False,  # the main agent's own periodic direction (DATA_MODEL.md §2.3)
     "verification": False,     # trace of a fact_submit verification outcome (logged by fact_submit)
     "elaboration": False,      # main agent's periodic high-signal progress synthesis (DATA_MODEL.md §2.4)
 }

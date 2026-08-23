@@ -1,7 +1,7 @@
 """Offline tests for danus.observability — no network, no codex, no API spend.
 
 Builds a temp project dir with a few fact ``.md`` files + a couple of
-``global_memory/*.jsonl`` channels (and a spend ledger), then exercises both:
+``global_memory/*.jsonl`` channels, then exercises both:
 
   * the pure builder functions (``build_overview`` / ``build_factgraph`` /
     ``build_channels`` / ``build_channel``) directly, and
@@ -71,7 +71,7 @@ def _fact_md(fact_id, author, predecessors, statement, proof, intuition="", prob
 
 
 def _seed_project(root: Path) -> None:
-    """A tiny 3-node DAG (a -> b -> c) plus two global-memory channels + spend."""
+    """A tiny 3-node DAG (a -> b -> c) plus two global-memory channels."""
     facts = root / "fact_graph" / "facts"
     facts.mkdir(parents=True)
     (facts / "aaaa.md").write_text(
@@ -103,12 +103,6 @@ def _seed_project(root: Path) -> None:
         fh.write(json.dumps({"author": "w", "verdict": "wrong", "claim": "no",
                              "timestamp_utc": "2026-07-01T12:00:00"}) + "\n")
 
-    spend = root / "spend"
-    spend.mkdir(parents=True)
-    with (spend / "consult.jsonl").open("w", encoding="utf-8") as fh:
-        fh.write(json.dumps({"cost_usd": 1.25}) + "\n")
-        fh.write(json.dumps({"cost_usd": 0.75}) + "\n")
-
 
 # --------------------------------------------------------------------------- #
 # pure builder functions (project passed explicitly — no env needed)          #
@@ -126,8 +120,6 @@ def test_overview_counts():
         # only two real plan entries survive (blank + malformed skipped)
         assert ov["channel_counts"]["plan"] == 2
         assert ov["verdicts"] == {"correct": 1, "wrong": 1}
-        assert ov["consult_count"] == 2
-        assert ov["consult_cost_usd"] == 2.0
 
 
 def test_factgraph_nodes_edges_depth():
@@ -188,9 +180,9 @@ def test_channels_and_channel():
 
 def test_missing_dirs_tolerated():
     with tempfile.TemporaryDirectory() as d:
-        root = Path(d)  # empty project — no fact_graph/global_memory/spend
+        root = Path(d)  # empty project — no fact_graph/global_memory
         ov = build_overview(root)
-        assert ov["facts"] == 0 and ov["consult_count"] == 0
+        assert ov["facts"] == 0
         assert build_factgraph(root)["nodes"] == []
         assert build_channel("plan", root)["entries"] == []
 
@@ -224,7 +216,7 @@ def test_http_routes_via_testclient():
 
 def main() -> None:
     test_overview_counts()
-    print("  [ok] overview counts (facts / authors / channels / verdicts / spend)")
+    print("  [ok] overview counts (facts / authors / channels / verdicts)")
     test_factgraph_nodes_edges_depth()
     print("  [ok] factgraph nodes/edges + dependency depth (0,1,2) + max_depth")
     test_factgraph_cycle_guard()

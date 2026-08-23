@@ -64,5 +64,5 @@ paper/.runs/
 danus/verify/agent/
 
 # node deps provisioned by bootstrap.sh (human-summary PDF render: markdown-it/katex)
-.claude/skills/human-summary/node_modules/
-.claude/skills/human-summary/package-lock.json
+.agents/skills/human-summary/node_modules/
+.agents/skills/human-summary/package-lock.json

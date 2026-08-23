@@ -27,5 +27,6 @@ node "$HERE/md2html.js" "$IN" "$TMP/r.html" "$TITLE"
 # --virtual-time-budget + --run-all-compositor-stages-before-draw: let KaTeX finish
 # laying out before the PDF snapshot, else formulas can render half-drawn.
 "$CHROME" --headless --disable-gpu --no-sandbox --print-to-pdf="$OUT" \
-  --virtual-time-budget=25000 --run-all-compositor-stages-before-draw "file://$TMP/r.html" 2>/dev/null || true
+  --no-pdf-header-footer --virtual-time-budget=25000 \
+  --run-all-compositor-stages-before-draw "file://$TMP/r.html" 2>/dev/null || true
 echo "PDF -> $OUT ($(wc -c < "$OUT" 2>/dev/null || echo 0) bytes)"

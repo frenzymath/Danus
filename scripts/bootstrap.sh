@@ -100,7 +100,7 @@ else
 fi
 
 # --- 4) node skill deps (human-summary: markdown-it + katex) ---------------
-HS="$DANUS_ROOT/.claude/skills/human-summary"
+HS="$DANUS_ROOT/.agents/skills/human-summary"
 if [ -d "$HS" ] && [ ! -d "$HS/node_modules/katex" ]; then
   log "installing human-summary node deps (markdown-it/katex)"
   ( cd "$HS" && $NICE "$NODE_DIR/bin/npm" install --no-fund --no-audit >/dev/null 2>&1 ) \

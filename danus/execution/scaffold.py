@@ -91,7 +91,7 @@ def _verify_url() -> str:
 
 
 def _default_model() -> str:
-    return codex.model()
+    return codex.model("DANUS_WORKER_MODEL")
 
 
 def write_codex_config(wl: "L.WorkerLayout") -> None:

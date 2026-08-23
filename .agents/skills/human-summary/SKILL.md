@@ -1,6 +1,6 @@
 ---
 name: human-summary
-description: Write a human-readable mathematical progress report (compiled PDF) on a project for the operator / the mathematician who posed the problem. This is NOT `elaboration` (dense input for the strategy consult) and NOT the dashboard. Render from the fact graph's verified statements/proofs into a clean, self-contained report — precise problem statement, essential partial results with REAL proof sketches, the one major obstacle, a neutral approach timeline, and the single remaining lemma written out in full — then output a compiled PDF.
+description: Write a human-readable mathematical progress report (compiled PDF) on a project for the operator / the mathematician who posed the problem. This is NOT `elaboration` (the internal strategy synthesis) and NOT the dashboard. Render from the fact graph's verified statements/proofs into a clean, self-contained report — precise problem statement, essential partial results with REAL proof sketches, the one major obstacle, a neutral approach timeline, and the single remaining lemma written out in full — then output a compiled PDF.
 ---
 
 # Human-readable progress report
@@ -100,22 +100,22 @@ For reference — you do not enforce these, the isolated writer does:
    status & the single remaining lemma written out in full (boxed).
 6. **No numerical examples**; honest proven / conditional / conjecture marking.
 7. **No system / operational info** — reads as a clean standalone research report;
-   no fact counts, no consult/`master_guidance`, no swarm/worker/verifier
+   no fact counts, no `master_guidance`, no swarm/worker/verifier
    vocabulary, blank author, no run timestamps.
 
 ## How this differs from `elaboration`
 
 | | `elaboration` | `human-summary` |
 |---|---|---|
-| audience | the strategy consult (a machine) | a human mathematician |
+| audience | the main agent (internal strategy) | a human mathematician |
 | density | maximal, terse, status tables | readable prose + detailed proof sketches |
 | ids | cites `fact_id`s | **none** |
 | length | tight | as long as the math needs (multi-page is normal) |
 | output | a global-memory entry (kind `elaboration`) | a compiled **PDF** |
 
 Run `human-summary` **on demand** (the operator asks for a report) or periodically
-as an operator update — it is separate from the strategy-consult cadence, and it
-never feeds the consult nor reads/writes global memory as truth. It is also **NOT
+as an operator update — it is separate from the internal strategy cycle, and it
+never feeds internal strategy nor reads/writes global memory as truth. It is also **NOT
 `write-paper`**: no bibliography, no `external_refs`, no house style — a private
 progress report, not a publication artifact.
 

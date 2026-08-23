@@ -22,7 +22,7 @@ TEX="${1:-}"
 MSG="${2:-Update paper}"
 [ -n "$TEX" ] && [ -f "$TEX" ] || { echo "latex_git_push: no such .tex: '$TEX'" >&2; exit 2; }
 
-# repo root = .../.claude/skills/write-paper/driver/latex_git_push.sh -> parents[4]
+# repo root = .../.agents/skills/write-paper/driver/latex_git_push.sh -> parents[4]
 _REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 SECRETS="${LATEX_GIT_ENV_FILE:-$_REPO/config/latex-git.env}"
 if [ ! -f "$SECRETS" ]; then

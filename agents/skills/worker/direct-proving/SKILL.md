@@ -33,8 +33,14 @@ Read:
 9. If a proof adaptation attempt fails, identify why the migration fails. Be concrete: for example, note which hypothesis is missing, which construction does not transfer, which step breaks, which counterexample blocks the migration, or which part of the searched proof depends on structure absent in the current setting.
 10. If a subgoal is solved with a self-contained partial result that the rest of the plan will USE downstream, partial-verify that result with `$verify-proof` in partial-candidate mode before treating it as established. Adopting unverified partial results as building blocks is the single biggest correctness risk; the verifier is the sole authority on whether the partial result really holds.
 11. If all subgoals are solved directly AND the partial results that compose into a full proof have each been partial-verified as needed, mark the plan as solved and assemble the proof draft.
-12. If the plan does not fully go through, then identify the key stuck points as concretely as possible.
-13. Focus on locating the decisive failure modes of the plan after this first full attempt, not on polishing a full proof.
+12. When a direction remains viable and supports sustained progress, work on it
+    deeply for 1–2 hours and try to establish one mathematically deep result that
+    resolves a genuine obstacle or materially advances the main problem. Do not
+    turn each routine calculation into its own fact, and do not bundle shallow
+    observations merely to imitate depth; use supporting steps to prove the one
+    substantive conclusion.
+13. If the plan does not fully go through, then identify the key stuck points as concretely as possible.
+14. Focus on locating the decisive failure modes of the plan after this first full attempt, not on polishing a full proof.
 
 ## Output Contract
 

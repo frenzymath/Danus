@@ -39,7 +39,7 @@ if [ "${CODEX_BACKEND:-api}" = "chatgpt" ]; then
 fi
 
 # --- (a) one cheap live call to the endpoint (api backend) ---
-PING="$(DANUS_CODEX_API_KEY="${DANUS_CODEX_API_KEY:-}" "$DANUS_PY" - "${CODEX_API_BASE_URL:-}" "${CODEX_API_MODEL:-gpt-5.5}" "$TS" <<'PY'
+PING="$(DANUS_CODEX_API_KEY="${DANUS_CODEX_API_KEY:-}" "$DANUS_PY" - "${CODEX_API_BASE_URL:-}" "${CODEX_API_MODEL:-gpt-5.6-sol}" "$TS" <<'PY'
 import sys, os, time, json
 from openai import OpenAI
 base, model, ts = sys.argv[1:4]

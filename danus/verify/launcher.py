@@ -9,7 +9,7 @@ is testable/reconfigurable).
 
 Config (env):
   DANUS_CODEX_BIN,
-  DANUS_VERIFY_MODEL (default gpt-5.5),
+  DANUS_VERIFY_MODEL (default gpt-5.6-sol),
   DANUS_VERIFY_EFFORT (default xhigh),
   CODEX_TIMEOUT_SECONDS (0 = no timeout),
   VERIFY_AGENT_HOME (the codex `-C` dir: AGENTS.md + .agents/skills + .codex),

@@ -6,8 +6,8 @@
 #
 # Resolves all paths from config/codex.env + config/danus.env + runtime/
 # runtime.env, then exports sane defaults and puts bin/ + the provisioned node +
-# venv on PATH. The bin/ wrappers source this for you, so `danus`, `consult`,
-# `codex` work without you sourcing it manually. Sourcing twice is harmless
+# venv on PATH. The bin/ wrappers source this for you, so `danus` and `codex`
+# work without you sourcing it manually. Sourcing twice is harmless
 # (idempotent).
 # =============================================================================
 
@@ -38,9 +38,13 @@ export CODEX_HOME="${CODEX_HOME:-$DANUS_RUNTIME/codex-home}"
 export VERIFY_PORT="${VERIFY_PORT:-8091}"
 export DASHBOARD_PORT="${DASHBOARD_PORT:-8099}"
 export DANUS_VERIFY_URL="${DANUS_VERIFY_URL:-http://127.0.0.1:${VERIFY_PORT}/verify}"
-export DANUS_CODEX_MODEL="${DANUS_CODEX_MODEL:-${CODEX_API_MODEL:-gpt-5.5}}"   # neutral default model for every codex call (defers to the api backend model)
-export DANUS_CODEX_EFFORT="${DANUS_CODEX_EFFORT:-xhigh}"   # neutral default reasoning effort
-export DANUS_CONSULT_TRANSPORT="${DANUS_CONSULT_TRANSPORT:-gpt_pro}"   # gpt_pro | claude_api | claude_code | off
+export DANUS_MAIN_MODEL="${DANUS_MAIN_MODEL:-${DANUS_CODEX_MODEL:-${CODEX_API_MODEL:-gpt-5.6-sol}}}"   # neutral default model for every danus-spawned codex call (honors a set DANUS_CODEX_MODEL alias or the api backend model)
+export DANUS_MAIN_EFFORT="${DANUS_MAIN_EFFORT:-${DANUS_CODEX_EFFORT:-xhigh}}"   # neutral default reasoning effort (honors the DANUS_CODEX_EFFORT alias)
+export DANUS_WORKER_MODEL="${DANUS_WORKER_MODEL:-$DANUS_MAIN_MODEL}"   # worker-only model (defaults to the neutral model above)
+# back-compat: keep the old names populated for any shell consumer that still
+# expands them (Python resolves via the aliases in danus.codex regardless).
+export DANUS_CODEX_MODEL="$DANUS_MAIN_MODEL"
+export DANUS_CODEX_EFFORT="$DANUS_MAIN_EFFORT"
 export DANUS_CHROME_BIN="${DANUS_CHROME_BIN:-}"        # headless Chrome/Chromium for human-summary PDF (empty = auto-detect)
 export CODEX_BACKEND="${CODEX_BACKEND:-api}"            # api (BYO key) | chatgpt (your login)
 
@@ -64,7 +68,6 @@ if [ "${DANUS_ENV_VERBOSE:-0}" = "1" ]; then
   echo "DANUS_AGENTS_ROOT=$DANUS_AGENTS_ROOT"
   echo "DANUS_VERIFY_URL=$DANUS_VERIFY_URL"
   echo "CODEX_HOME=$CODEX_HOME"
-  echo "consult transport=$DANUS_CONSULT_TRANSPORT"
 fi
 
 # 6) verify-service identity probe (shared by doctor.sh / services.sh).

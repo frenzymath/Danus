@@ -36,9 +36,10 @@ verifier) decides; and a result only *exists* once that authority has accepted i
   that is the **sole authority on correctness**. A result becomes a fact **if and
   only if** the verifier returns a `correct` verdict. It is an LLM, not a formal
   proof assistant — see `security-and-trust.md`.
-- **The strategy consult.** The main agent's high-intelligence step: it distills
-  the project's state (an *elaboration*) and consults a strong reasoning model,
-  whose reply becomes the swarm's steering (`master_guidance`).
+- **The strategy loop.** The main agent's high-intelligence step: it distills
+  the project's state (an *elaboration*) and reasons over it itself — optionally
+  spawning exploratory codex subagents — then writes the direction it decides on
+  as the swarm's steering (`master_guidance`).
 
 ## The three memory tiers, and the one truth boundary
 
@@ -89,23 +90,21 @@ new state:
 1. **Elaborate** — distill the shared stores into a high-signal synthesis (verdict,
    closed routes, interfaces, dangers, missing bridge lemmas). *(the `elaboration`
    skill)*
-2. **Consult** — send that synthesis to a strong reasoning model. *(the
-   `consult` skill)*
-3. **Record & dispatch** — store the reply verbatim as `master_guidance` and give
+2. **Decide direction** — reason over that synthesis (optionally via exploratory
+   codex subagents) and settle on the next steer.
+3. **Record & dispatch** — store the decided direction as `master_guidance` and give
    each worker its per-round assignment (`danus assign`).
 4. **Monitor** — watch progress; repeat when there is genuinely new state.
 
-The consult transport is configurable: **`gpt_pro`** (a paid OpenAI-compatible
-model, the default), **`claude_api`** (the Anthropic API, per-token BYO key),
-**`claude_code`** (your Claude subscription via the Claude Code CLI), or **`off`** (the
-main agent reasons on its own, no spend). Workers and the verifier always run on
-your own codex backend.
+The steer is the main agent's own reasoning — there is no external strategy
+transport to configure. Workers and the verifier always run on your own codex
+backend.
 
 ## The lifecycle of a project
 
 ```
 initialize ─▶ new project ─▶ strategy loop ⇄ worker swarm ─▶ verify ─▶ fact graph
-   (setup)     (PROBLEM.md)   (elaborate→consult→assign→monitor)   (the write-gate)
+   (setup)     (PROBLEM.md)   (elaborate→decide→assign→monitor)    (the write-gate)
                                      │                                  │
                               human-summary                  finalize (you confirm
                     (progress report — any time, no gate)        the answer)
@@ -114,8 +113,8 @@ initialize ─▶ new project ─▶ strategy loop ⇄ worker swarm ─▶ verif
                                                                (publishable LaTeX)
 ```
 
-- **initialize** — first-run setup: your profile, the codex backend, the consult
-  transport, the git branch, the spend ceiling; brings the verify service up.
+- **initialize** — first-run setup: your profile, the codex backend, the git
+  branch, the spend ceiling; brings the verify service up.
 - **new** — create a project (`PROBLEM.md` + a worker roster). One project = one
   problem, its own memory and fact graph.
 - **strategy ⇄ workers** — the loop above; workers prove, submit, and the fact

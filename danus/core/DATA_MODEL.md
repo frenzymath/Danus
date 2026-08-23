@@ -134,9 +134,9 @@ this one's).
 | `dead_end` | usually false | worker | why a path failed; if killed by a counterexample it can be verifiable |
 | `direction` | false | worker | "worth exploring X" — an unverifiable judgment |
 | `obstacle` | false | worker | "X seems to block this route" — an unverifiable judgment |
-| `master_guidance` | false | **main agent (via GPT-5.5-pro)** | the periodic high-intelligence strategic steer: critical decomposition, direction judgment, core thinking. Authoritative — workers heed it (but it is still not a correctness source). |
+| `master_guidance` | false | **main agent** | the periodic high-intelligence strategic steer the main agent reasons out itself (optionally via exploratory codex subagents): critical decomposition, direction judgment, core thinking. Authoritative — workers heed it (but it is still not a correctness source). |
 | `verification` | false | the worker's `fact_submit` (auto) | a trace of a verification outcome: the verdict, plus `fact_id` (on accept) or `repair_hints` (on reject). Logged automatically by `fact_submit` so the verifier's feedback is not lost — the verifier itself stays stateless. Siblings read these to learn from rejections. |
-| `elaboration` | false | **main agent** | the periodic, high-signal-to-noise progress synthesis the main agent writes before consulting GPT-5.5-pro: mathematical verdict, closed/obsolete routes, interface contracts, dangerous heuristics, missing bridge lemmas (§2.4). It is the *input* prepared for the pro consult; `master_guidance` is pro's *reply*. Same cadence. |
+| `elaboration` | false | **main agent** | the periodic, high-signal-to-noise progress synthesis the main agent writes before deciding the next steer: mathematical verdict, closed/obsolete routes, interface contracts, dangerous heuristics, missing bridge lemmas (§2.4). It is the synthesis the main agent reasons over to produce `master_guidance`. Same cadence. |
 
 Process-only categories (`branch_states`, `events`) stay in
 **local memory**, not here — they are not findings. `verification_reports` is
@@ -174,21 +174,21 @@ operates per-claim on the shared store.
 ### 2.3 master_guidance — the strategic channel
 
 The main agent operates and schedules N parallel workers. On a fixed cadence
-(e.g. hourly, or whenever all workers finish a round) it consults **GPT-5.5-pro**
-for the most critical decomposition, direction judgment, and core thinking
-(high intelligence, expensive ⇒ periodic, not per-round). It records the result
-as a `master_guidance` entry. Workers read `master_guidance` and follow it as
-authoritative steering. (Consequence for skills, decided later: this concentrates
-the expensive intelligence at the strategic level, shrinking per-worker peer
-consults.)
+(e.g. hourly, or whenever all workers finish a round) it reasons out the most
+critical decomposition, direction judgment, and core thinking itself —
+optionally spawning exploratory codex subagents (high intelligence, expensive ⇒
+periodic, not per-round). It records the result as a `master_guidance` entry.
+Workers read `master_guidance` and follow it as authoritative steering. (This
+concentrates the expensive intelligence at the strategic level, shrinking
+per-worker peer consults.)
 
 **Operations.** `append(kind, claim, evidence, verifiable, author, links, **extra) -> id`,
 `set_status(id, status, fact_id=None)`, `read(kind)` (entries, status folded),
 `search(query, kinds, limit)` (BM25).
 
-### 2.4 elaboration — the synthesis channel (input to the pro consult)
+### 2.4 elaboration — the synthesis channel (input to the strategic steer)
 
-On the same cadence as the strategic consult (§2.3), the main agent first writes
+On the same cadence as the strategic steer (§2.3), the main agent first writes
 an **elaboration**: a single high-signal-to-noise synthesis of the project's
 current state, read **only from the shared stores** — global memory (findings,
 dead ends, recent verifications) and the fact graph (verified facts, the DAG,
@@ -200,11 +200,12 @@ distance estimates, no process telemetry). The *how* lives in the **`elaboration
 main-agent skill**, not in code.
 
 The elaboration is recorded as an `elaboration` entry (`claim` = the one-line
-verdict, `evidence` = the full templated body, `links` = cited `fact_id`s), then
-handed to GPT-5.5-pro; pro's reply becomes the next `master_guidance` (§2.3).
-Instead of peer workers reviewing each other, the main agent distills the shared
-state and a single high-intelligence model reasons over it. Operationally it is
-also what the main agent draws on to keep the human informed.
+verdict, `evidence` = the full templated body, `links` = cited `fact_id`s); the
+main agent then reasons over it — optionally via exploratory codex subagents — to
+produce the next `master_guidance` (§2.3). Instead of peer workers reviewing each
+other, the main agent distills the shared state and reasons over it at high
+intelligence. Operationally it is also what the main agent draws on to keep the
+human informed.
 
 ---
 
@@ -375,8 +376,9 @@ is prose.
 
 ## 5. Usage logic (typical round)
 
-1. **Main agent**, periodically: consult GPT-5.5-pro → append a `master_guidance`
-   entry to global memory.
+1. **Main agent**, periodically: reason over the shared stores itself (optionally
+   via exploratory codex subagents) → append a `master_guidance` entry to global
+   memory.
 2. **Worker**, each round:
    - read `master_guidance` + recent global memory (others' findings, dead ends)
      + relevant fact graph entries; recall own `local memory`.

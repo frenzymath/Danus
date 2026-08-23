@@ -3,11 +3,20 @@
 # by scripts/bootstrap.sh; its exact path is written to runtime/runtime.env as
 # DANUS_NODE / DANUS_CODEX_JS. This wrapper keeps a single codex version on the
 # workers' PATH regardless of where it landed.
+#
+# Main-agent model: for an INTERACTIVE launch (no subcommand, i.e. `codex` or
+# `codex -<flag> …`) we inject `--model "$DANUS_MAIN_MODEL"` so the main agent
+# honors the neutral model knob. Subcommands (`exec`, `login`, `mcp`, …) are left
+# untouched — the worker `exec` rounds already pass their own `--model`.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../scripts/env.sh" >/dev/null 2>&1
 if [ -z "${DANUS_NODE:-}" ] || [ -z "${DANUS_CODEX_JS:-}" ]; then
   echo "codex not provisioned — run scripts/bootstrap.sh (sets DANUS_NODE/DANUS_CODEX_JS)" >&2
   exit 127
+fi
+_main_model="${DANUS_MAIN_MODEL:-${DANUS_CODEX_MODEL:-}}"
+if [ -n "$_main_model" ] && { [ "$#" -eq 0 ] || [ "${1#-}" != "$1" ]; }; then
+  set -- --model "$_main_model" "$@"
 fi
 exec "$DANUS_NODE" "$DANUS_CODEX_JS" "$@"

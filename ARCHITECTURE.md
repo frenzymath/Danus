@@ -15,7 +15,7 @@ For the main agent's operating contract, see `AGENTS.md`
 
 ```
 operator → ① orchestration (main agent + danus CLI)   — conducts, never does math
-              ② strategy   (elaboration → consult → master_guidance)
+              ② strategy   (the main agent's own periodic synthesis: elaboration → master_guidance)
               ③ execution  (worker swarm; each round = one codex session running the Rethlas proving skills)
    gm_* │         │ fact_submit
         ▼         ▼
@@ -46,7 +46,6 @@ Danus/
 │  ├─ gateway/                  ⑥ role-gated MCP: 6 tools · role table (roles.py)
 │  ├─ verify/                   ④ verification HTTP service · prechecks · cold-start codex launcher
 │  ├─ execution/                ③ worker swarm: round loop · project/worker lifecycle + layout
-│  ├─ strategy/                 ② consult gateway (gpt_pro|claude_api|claude_code|off transport)
 │  ├─ orchestration/            ① the `danus` CLI verbs
 │  ├─ integrations/             arXiv theorem search (Matlas)
 │  ├─ observability/            read-only dashboard
@@ -59,10 +58,10 @@ Danus/
 │     ├─ worker/                9 proving skills (inherited from Rethlas)
 │     ├─ verify/                3 verify skills
 │     └─ write-paper/           paper role prompts + house style (embedded by the write-paper MCP)
-├─ .agents/skills/              MAIN-AGENT SKILLS (codex auto-discovers; → .claude/skills/)
-│  ├─ elaboration/  consult/  human-summary/  initialize/
+├─ .agents/skills/              MAIN-AGENT SKILLS (codex auto-discovers)
+│  ├─ elaboration/  human-summary/  initialize/
 │  └─ write-paper/              the recipe SKILL.md + driver/ scripts + templates/
-├─ bin/                         thin wrappers: danus · danus-mcp · write-paper-mcp · human-summary-mcp · codex · consult
+├─ bin/                         thin wrappers: danus · danus-mcp · write-paper-mcp · human-summary-mcp · codex
 ├─ scripts/                     bootstrap · doctor · services · env · setup/check-codex · start-verify/-dashboard · recover · install-tex
 ├─ docs/                        human docs: getting started · concepts · operating guide · security & trust · …
 └─ examples/                    unattended-ops examples + a toy project
@@ -87,12 +86,11 @@ Danus/
 5. Autonomy and resumability. Workers run detached; a "round" continues from
    persisted memory rather than adding one increment, so no single crash loses
    verified work.
-6. The strategy consult is the brain. Between rounds the main agent consults a
-   top-tier reasoning model (gpt-5.5-pro over the `gpt_pro` transport, or
-   claude-fable-5 over the `claude_api` / `claude_code` transports) to set direction;
-   its reply becomes the swarm's `master_guidance`. Transport is `gpt_pro` (default),
-   `claude_api`, `claude_code`, or `off` (no key — the main agent reasons on its own). The consult is not
-   optional — it is how the swarm gets steered.
+6. The main agent's own reasoning is the brain. Between rounds the main agent
+   reasons over the shared stores itself — optionally spawning exploratory codex
+   subagents — distills the project's state into an `elaboration`, and writes the
+   direction it decides on as the swarm's `master_guidance`. This periodic steer
+   is not optional — it is how the swarm gets steered.
 7. Portable and BYO. No hardcoded absolute paths, no committed secrets; keys come
    from gitignored `config/*.env` (templates committed as `*.example`).
 8. Clean author context. Any agent that produces an artifact for an outside
@@ -124,7 +122,6 @@ Danus/
 | MCP launch | `python -m danus.gateway` + `DANUS_ROLE` env | `danus.verify` launcher · worker `.codex/config.toml` · `.codex/config.toml` (main) → `danus.gateway` |
 | verify HTTP | `POST /verify {statement,proof}` → `{verification_report,verdict,repair_hints}`; verdict ⟺ no critical_errors & no gaps | `danus.gateway.fact_submit` ↔ `danus.verify` |
 | fact id inputs | `problem_id + sorted(predecessors) + sorted(glossary) + normalized(statement,proof)`; **external_refs EXCLUDED** | `danus.core` ↔ everyone (write-paper reads `external_refs`) |
-| global-memory kinds | the 11 `GLOBAL_KINDS` (incl. `master_guidance`/`elaboration`/`verification`) | `danus.core` ↔ agents · strategy · consult |
-| consult JSON envelope | `{transport,reply,usage,cost_usd,…}`; always one envelope — a consult that could not run is `status="failed"` + `error`, never a traceback | `danus.strategy` CLI ↔ consult skill |
+| global-memory kinds | the 11 `GLOBAL_KINDS` (incl. `master_guidance`/`elaboration`/`verification`) | `danus.core` ↔ agents |
 | write-paper prompt assets | codex role prompts + style read from `agents/skills/write-paper/` (via `DANUS_WRITE_PAPER_SKILL_DIR`) | `danus.write_paper` assembler ↔ `agents/skills/write-paper/` |
-| env-var contract | `DANUS_* / CODEX_* / VERIFY_* / CONSULT_*` names; the codex CALL + env (bin/model/effort/PATH/`exec` prefix) is resolved through the shared `danus.codex` launcher: neutral `DANUS_CODEX_BIN` / `DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT` + per-service `DANUS_{VERIFY,WRITE_PAPER,HUMAN_SUMMARY}_{MODEL,EFFORT}` overrides | `danus.codex` + `config/` + `scripts/env.sh` ↔ every codex-exec site (`danus.execution.loop` · `danus.verify.launcher` · `danus.authoring.driver`) |
+| env-var contract | `DANUS_* / CODEX_* / VERIFY_*` names; the codex CALL + env (bin/model/effort/PATH/`exec` prefix) is resolved through the shared `danus.codex` launcher: neutral `DANUS_CODEX_BIN` / `DANUS_MAIN_MODEL` / `DANUS_MAIN_EFFORT` (back-compat aliases `DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT`) + `DANUS_WORKER_MODEL` for workers + per-service `DANUS_{VERIFY,WRITE_PAPER,HUMAN_SUMMARY}_{MODEL,EFFORT}` overrides | `danus.codex` + `config/` + `scripts/env.sh` ↔ every codex-exec site (`danus.execution.loop` · `danus.verify.launcher` · `danus.authoring.driver`) |

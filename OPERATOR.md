@@ -12,12 +12,11 @@
 ## Operator
 - **Name / how to address:** _(ask once; fill in)_
 - **Language:** _(the language the main agent replies in; code/comments/skills stay English)_
-- **Timezone:** _(for scheduling summaries/consults)_
+- **Timezone:** _(for scheduling summaries)_
 
 ## Standing preferences
 - **Notifications:** _(how/where to reach them; what severity warrants a ping)_
-- **Spend ceiling (paid consult API):** _(USD; warn before crossing)_
-- **Consult transport:** _(`gpt_pro` — paid API, BYO key / `claude_api` — Anthropic API, per-token BYO key / `claude_code` — your Claude subscription / `off` — main agent reasons on its own)_
+- **Spend ceiling (paid backend API):** _(USD; warn before crossing)_
 - **worker roster:** _(default `high:3,xhigh:4` — 3 high + 4 xhigh; asked per project at `danus new`)_
 
 ## Per-project pointers

@@ -125,8 +125,7 @@ Install: `danus/gateway/INSTALL.md`.
 facts enter only via `fact submit`, and the read view is the on-demand
 `fact_search` index, never an appended board) · `submit_blueprint_candidate`
 (folded into `fact submit`) · the `swarm_*`, `ask_human`, `read_directives`,
-`consult_*`, `shell_run` tools (out of scope here — control / human / consult /
-runtime). (Reading and novelty judgment over verified facts are covered by the
+`shell_run` tools (out of scope here — control / human / runtime). (Reading and novelty judgment over verified facts are covered by the
 single derived read view `fact_search` above.)
 
 ## Summary — the whole interface surface

@@ -451,7 +451,7 @@ def _compile_verify_script() -> Path:
     """Locate the shipped ``driver/compile_verify.sh`` (the main-agent skill half).
     Resolved at CALL time (not import) so the layout stays overridable."""
     repo_root = Path(__file__).resolve().parents[2]
-    return repo_root / ".claude" / "skills" / "write-paper" / "driver" / "compile_verify.sh"
+    return repo_root / ".agents" / "skills" / "write-paper" / "driver" / "compile_verify.sh"
 
 
 def _compile_check(tex: str) -> Dict[str, Any]:

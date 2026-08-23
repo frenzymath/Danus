@@ -7,7 +7,6 @@ project dir and NEVER writes:
 
   <project>/fact_graph/facts/*.md         the verified-fact DAG
   <project>/global_memory/<kind>.jsonl    categorized findings (the 11 kinds)
-  <project>/spend/consult.jsonl       pro-consult cost ledger (optional)
 
 Decoupled by design: it imports no danus.core runtime module. The channel set is
 a plain data constant here (mirrors core.schema.GLOBAL_KINDS); if core changes it,
@@ -72,10 +71,6 @@ def _facts_dir(project: Path) -> Path:
 
 def _channel_file(project: Path, kind: str) -> Path:
     return project / "global_memory" / f"{kind}.jsonl"
-
-
-def _spend_file(project: Path) -> Path:
-    return project / "spend" / "consult.jsonl"
 
 
 # ------------------------------------------------------------------------- #
@@ -166,10 +161,6 @@ def _load_channel(project: Path, kind: str) -> List[Dict[str, Any]]:
     return _load_jsonl(_channel_file(project, kind))
 
 
-def _load_spend(project: Path) -> List[Dict[str, Any]]:
-    return _load_jsonl(_spend_file(project))
-
-
 def _depths(deps: Dict[str, List[str]]) -> Dict[str, int]:
     """depth = longest path from a leaf (no-predecessor) node up to this one —
     how many dependency layers a fact is built on. Leaves = 0. Cycle-guarded (a
@@ -202,8 +193,6 @@ class Overview(BaseModel):
     facts_by_author: Dict[str, int]
     channel_counts: Dict[str, int]
     verdicts: Dict[str, int]
-    consult_count: int
-    consult_cost_usd: float
     updated_at: float
 
 
@@ -257,8 +246,6 @@ def build_overview(project: Optional[Path] = None) -> Dict[str, Any]:
     for e in _load_channel(project, "verification"):
         v = e.get("verdict", "?")
         verdicts[v] = verdicts.get(v, 0) + 1
-    spend = _load_spend(project)
-    total_cost = round(sum(float(s.get("cost_usd", 0.0) or 0.0) for s in spend), 2)
     by_author: Dict[str, int] = {}
     for f in facts:
         by_author[f["author"]] = by_author.get(f["author"], 0) + 1
@@ -270,8 +257,6 @@ def build_overview(project: Optional[Path] = None) -> Dict[str, Any]:
         "facts_by_author": by_author,
         "channel_counts": counts,
         "verdicts": verdicts,
-        "consult_count": len(spend),
-        "consult_cost_usd": total_cost,
         "updated_at": time.time(),
     }
 

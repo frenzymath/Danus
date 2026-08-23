@@ -14,8 +14,6 @@ echo "DANUS_ROOT=$DANUS_ROOT"
 "$DANUS_PY" -c 'from danus._mcp import FastMCP' 2>/dev/null && ok "python dep: mcp" || no "python dep: mcp missing or incompatible"
 (cd / && "$DANUS_PY" -c 'import danus' 2>/dev/null) && ok "python pkg: danus (importable from any cwd)" || no "danus package not installed in the venv — worker MCP gateway and bin/ wrappers fail off the repo root (run bootstrap.sh)"
 "$DANUS_PY" -c 'import fastapi, uvicorn, pydantic' 2>/dev/null && ok "python deps: fastapi/uvicorn/pydantic" || no "verify-service deps missing"
-"$DANUS_PY" -c 'import openai' 2>/dev/null && ok "python dep: openai (gpt_pro consult)" || wn "openai missing (gpt_pro consult disabled)"
-"$DANUS_PY" -c 'import anthropic' 2>/dev/null && ok "python dep: anthropic (claude_api consult)" || wn "anthropic missing (claude_api consult disabled)"
 if [ -n "${DANUS_NODE:-}" ] && [ -x "${DANUS_NODE:-/nonexist}" ]; then ok "node: $DANUS_NODE"; else wn "node not provisioned"; fi
 if "$DANUS_ROOT/bin/codex" --version >/dev/null 2>&1; then ok "codex: $("$DANUS_ROOT/bin/codex" --version 2>/dev/null)"; else no "codex wrapper not working (run bootstrap.sh)"; fi
 if [ "${CODEX_BACKEND:-api}" = "api" ]; then
@@ -36,5 +34,4 @@ command -v "$TEX" >/dev/null 2>&1 && ok "latex: $TEX ($($TEX --version 2>/dev/nu
 # human-summary PDF render (soft): DANUS_CHROME_BIN, else chrome/chromium on PATH.
 CHROME="${DANUS_CHROME_BIN:-}"; [ -z "$CHROME" ] && CHROME="$(command -v chromium chromium-browser google-chrome google-chrome-stable 2>/dev/null | head -1)"
 { [ -n "$CHROME" ] && [ -x "$CHROME" ]; } && ok "chrome: $CHROME (human-summary PDF)" || wn "no Chrome/Chromium (human-summary PDF render needs it; set DANUS_CHROME_BIN or install)"
-echo "consult transport: $DANUS_CONSULT_TRANSPORT"
 echo "done."

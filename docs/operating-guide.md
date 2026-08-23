@@ -24,8 +24,8 @@ spend past the ceiling?); everything else the main agent acts on and reports.
 ## 0. First session — initialize
 
 On a fresh deployment the main agent runs `initialize`: it interviews you (how to
-address you + language, git branch off `main`, spend ceiling, consult transport,
-codex backend), fills `OPERATOR.md` + `config/danus.env`, brings up the verify
+address you + language, git branch off `main`, spend ceiling, codex backend),
+fills `OPERATOR.md` + `config/danus.env`, brings up the verify
 service, and marks `runtime/.danus-initialized`. After that, every session
 re-reads your `OPERATOR.md` and the project's `PROBLEM.md`.
 
@@ -49,14 +49,14 @@ new state:
 
 1. **Elaborate** — distill the shared stores into a high-signal synthesis (verdict,
    closed routes, dangers, the missing bridge lemmas). *(the `elaboration` skill)*
-2. **Consult** — send that to a strong model. *(the `consult` skill; `gpt_pro`
-   by default, `claude_api`, `claude_code`, or `off`)*
-3. **Assign** — record the reply as `master_guidance` and give each worker its
-   per-round task (`danus assign`).
+2. **Decide direction** — reason over that synthesis itself, optionally spawning
+   exploratory codex subagents.
+3. **Assign** — record the decided direction as `master_guidance` and give each
+   worker its per-round task (`danus assign`).
 4. **Monitor** — watch `danus status` / the dashboard; repeat when there is new
    state.
 
-Cadence is roughly: a strategy consult every ~2h, a human-readable summary every
+Cadence is roughly: a strategy beat every ~2h, a human-readable summary every
 ~1h, while your session is active. **When your session is inactive, only the
 workers keep looping** — no auto strategy beats fire (there is no resident cron).
 For unattended operation see `operations.md` (the tmux example).
@@ -119,7 +119,7 @@ without one.
 - The pipeline drafts, compiles (a hard gate), audits + verifies citations online,
   and re-verifies the whole paper as written through a dedicated paper-math
   verifier before delivery. See the write-paper skill README
-  (`.claude/skills/write-paper/README.md`).
+  (`.agents/skills/write-paper/README.md`).
 
 ## 6. Anything that leaves the machine is your call
 

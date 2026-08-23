@@ -1,7 +1,7 @@
 """Shared fixtures for the danus.human_summary offline tests.
 
 The read-only source fixture is the shipped example project
-``.claude/skills/human-summary/examples/odd-sum/`` (it has ``fact_graph/facts/``
+``.agents/skills/human-summary/examples/odd-sum/`` (it has ``fact_graph/facts/``
 + ``PROBLEM.md``). Anything that WRITES copies it to a tempdir first.
 """
 
@@ -14,7 +14,7 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILL_DIR = _REPO_ROOT / "agents" / "skills" / "human-summary"                 # codex-facing writer prompt
-MAIN_SKILL_DIR = _REPO_ROOT / ".claude" / "skills" / "human-summary"          # main-agent side (SKILL.md / render pipeline / examples)
+MAIN_SKILL_DIR = _REPO_ROOT / ".agents" / "skills" / "human-summary"          # main-agent side (SKILL.md / render pipeline / examples)
 EXAMPLE_PROJECT = MAIN_SKILL_DIR / "examples" / "odd-sum"
 
 

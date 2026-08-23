@@ -1,17 +1,19 @@
 ---
 name: elaboration
-description: Write a high-signal-to-noise mathematical progress synthesis of a project from the shared stores (global memory + fact graph), following a fixed verdict→routes→interfaces→dangers→bridges template and a strict honesty discipline. Use it each strategic cycle, right before the strategy consult — the elaboration is what you feed the consult; the consult's reply becomes master_guidance.
+description: Write a high-signal mathematical synthesis from global memory and the fact graph for the Codex main agent's own strategy and worker dispatch.
 ---
 
 # Elaboration
 
-You are the **main agent**. Each strategic cycle (whenever the workers finish a
-round, or you otherwise have genuinely new state) you distill the project's
-current state into one **elaboration**: a readable, deeply-analytical synthesis
-for a strategist — high signal, no filler. It is the *input* you prepare for the
-strategy consult (the `consult` skill); the consult's reply becomes the next
-`master_guidance`. Instead of peer workers reviewing each other, you distill the
-shared state and one high-intelligence model reasons over it.
+You are the **main agent**. At each strategic cycle, including the global review
+on each roughly 30-minute heartbeat, you distill the project's current state into
+one **elaboration** when the synthesis materially changes: a readable, deeply
+analytical synthesis for your own reasoning and worker dispatch. The heartbeat
+itself always requires a fresh global appraisal, but it need not create a
+duplicate elaboration when nothing material changed. You may ask speculative
+Codex subagents to explore individual gaps or undertake sustained technical
+reasoning, but their reports remain unverified and must be labelled as
+hypotheses. You author the next `master_guidance` yourself.
 
 The elaboration is also what you draw on to keep the operator informed.
 
@@ -32,8 +34,8 @@ check them mechanically:
 - **Exactly seven status labels**, UPPERCASE, drawn only from: **CLOSED ·
   SUBSTANTIAL · PARTIAL · DANGEROUS · FALSE AS STATED · OBSOLETE · UNKNOWN**.
 - **§0 opens** with exactly one bolded verdict line and contains the status
-  dashboard table + the sub-task status summary table + the Current best proof
-  skeleton + the Central missing lemma.
+  dashboard table + the sub-task status summary table + the approach portfolio +
+  the Current best proof skeleton + the Central missing lemma.
 - **Every `fact_id` cited exists** in the fact graph; no invented ids, no
   paraphrase substituted for a verified statement.
 - **Published** via `gm_add(kind="elaboration", …)` with `verifiable` left at its
@@ -109,6 +111,15 @@ enumerates. Use **only** these UPPERCASE labels:
 > zero remaining hypothesis to match?" If you cannot answer YES with a specific
 > `fact_id` and zero remaining work, mark SUBSTANTIAL. Over-marking CLOSED is the
 > single most damaging error here — it reads as "no further work needed."
+
+Then an **approach portfolio** (one table: Approach | Mechanism | Mathematical
+frontier | Decisive obstacle | Evidence for/against | Active/parked | Revisit
+condition). Include every credible route still worth remembering, not only the
+currently dominant route. Preserve parked routes and their return conditions so
+that recent work cannot silently erase a serious alternative. If a major route
+choice has changed, state the alternatives considered and the mathematical
+reason for the change; this decision must also be preserved in the subsequent
+`master_guidance`.
 
 End §0 with **Current best proof skeleton** (6–12 short numbered lines: the
 smallest structure that closes the goal *if* the central missing lemma were
@@ -191,13 +202,24 @@ different bridges.
 - **No process telemetry.** No worker counts, service state, mtimes, run
   scheduling — this is purely mathematical. Do not discuss how the elaboration
   was produced, scheduled, or delivered.
-- **No agent-facing directives.** The elaboration is a *synthesis*, not a
-  dispatch order. Turning it into instructions for workers is the strategy
-  consult's job (→ `master_guidance`), and dispatch is yours afterward — not part
-  of this artifact.
+- **No agent-facing directives.** The elaboration is a synthesis, not a dispatch
+  order. Use it afterward to author `master_guidance` and worker assignments.
 - **Honest, not reassuring.** Surface hidden assumptions, possibly-false
   statements, and places where a status label may mislead. Do not round
   SUBSTANTIAL up to "almost done".
+- **Global, not locally captive.** Judge the whole portfolio and the route to the
+  fixed goal. Fact volume, proof length, and activity inside the primary route do
+  not by themselves show macro-level progress.
+- **Literature-aware.** Before presenting a route as novel or committing heavily
+  to it, use `search_arxiv_theorems` broadly with varied formulations and
+  technique names. Record a concise technique map in global memory: mechanisms,
+  exact assumptions, limitations, relevant arXiv identifiers/results, and
+  possible interfaces with this problem. Understand and adapt established
+  strategies before inventing new machinery; literature notes are not facts.
+- **Four-hour macro audit.** At least once every four hours of active work,
+  explicitly reassess and record the full approach portfolio, mathematical
+  frontier and obstacle of each route, evidence for/against it, worker allocation,
+  and whether to continue, complement, park, or resume each route.
 
 ## Output Contract
 
@@ -211,12 +233,9 @@ Publish the elaboration to global memory with `gm_add`:
 - (`verifiable` defaults to `false` for this kind — it is a synthesis/judgment,
   not an objectively checkable claim; leave it unset.)
 
-Then hand the elaboration to the **strategy consult** (the `consult` skill):
-it feeds this elaboration to the strong model as the prompt and records the
-reply as a `master_guidance` entry. Elaboration is the *input*; `master_guidance`
-is the *reply* — never conflate the two, and do not consult or dispatch from
-inside this skill. You dispatch workers from the resulting `master_guidance`
-afterward, and keep the operator informed at the right severity.
+Then reason over the elaboration yourself. Optionally give precise pieces to
+exploratory subagents, label their reports unverified, synthesize the result into
+`master_guidance`, and dispatch Danus workers afterward.
 
 ## Tools
 
@@ -228,5 +247,6 @@ Reference the role=main MCP tools by name (never internal engine paths):
   facts and the DAG (`fact_search` to pull the facts bearing on a sub-task; read
   the files for the full statements/proofs and predecessor structure).
 - `gm_add` (kind `elaboration`) — publish the synthesis.
-- `search_arxiv_theorems` — optional, to sanity-check whether a missing bridge
-  already exists in the literature before you name it.
+- `search_arxiv_theorems` — use repeatedly with varied formulations and technique
+  names to map the relevant literature, understand established mechanisms and
+  hypotheses, and check whether missing bridges or nearby results already exist.

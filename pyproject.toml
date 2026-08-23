@@ -37,8 +37,7 @@ write-paper = ["mcp"]                                     # danus.write_paper   
 human-summary = ["mcp"]                                   # danus.human_summary — human-summary MCP service
 verify = ["fastapi", "uvicorn", "pydantic"]         # danus.verify  — cold-start verifier HTTP service
 observability = ["fastapi", "uvicorn", "pydantic"]  # danus.observability — read-only dashboard
-strategy = ["openai", "anthropic"]                  # danus.strategy — API consult transports
-dev = ["pytest", "mcp", "fastapi", "uvicorn", "pydantic", "openai", "anthropic"]  # full test suite (all modules)
+dev = ["pytest", "mcp", "fastapi", "uvicorn", "pydantic"]  # full test suite (all modules)
 
 [tool.setuptools.packages.find]
 include = ["danus*"]

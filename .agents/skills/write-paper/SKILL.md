@@ -31,8 +31,8 @@ or two real decisions to the operator.
 - The operator asks to **write**, **revise**, **audit references for**, or
   **push** the paper for a project.
 
-Do not use it for the progress report (`human-summary`) or for the dense pro
-consult input (`elaboration`).
+Do not use it for the progress report (`human-summary`) or the internal strategy
+synthesis (`elaboration`).
 
 ## Source of content: the fact graph (never your memory)
 
@@ -459,7 +459,7 @@ deterministic path choked on.
    on **stdin** (never argv), and run the repo's codex wrapper at `xhigh`, read-only
    (the same flags the tool uses — see `danus.authoring.driver`):
    ```bash
-   bin/codex exec --model "$DANUS_CODEX_MODEL" --config model_reasoning_effort=xhigh \
+   bin/codex exec --model "$DANUS_MAIN_MODEL" --config model_reasoning_effort=xhigh \
      --sandbox read-only --skip-git-repo-check - < /tmp/writer_prompt.md \
      > <project>/paper/main.tex          # or <project>/papers/<paper_id>/main.tex
    ```

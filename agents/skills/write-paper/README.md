@@ -37,7 +37,7 @@ instead. The role map, for developers:
 
 The **main-agent-facing** half of this skill — the recipe `SKILL.md`, the scripts
 the main agent runs (`driver/`), and the `templates/` it instantiates — lives under
-`.claude/skills/write-paper/`.
+`.agents/skills/write-paper/`.
 
 **Chunked (section-by-section) generation.** When a target closure's full-proof
 writer prompt would exceed the model context window, the MCP auto-chunks (threshold
@@ -47,4 +47,4 @@ bibliography), then one `PAPER_SECTION_WRITER` call per section (that section's 
 proofs + the fixed macros/labels + other results' statements for `\ref`), then a
 deterministic Python stitch. Each call is still a non-agentic isolated codex; the
 single-pass path is unchanged when the closure fits. See
-`.claude/skills/write-paper/SKILL.md` Stage 2.
+`.agents/skills/write-paper/SKILL.md` Stage 2.

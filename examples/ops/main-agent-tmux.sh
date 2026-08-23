@@ -10,7 +10,7 @@
 # skills (.agents/skills), and .codex/config.toml — and .codex/config.toml is what
 # wires the gateway MCP server (`python -m danus.gateway` via bin/danus-mcp). This
 # script deliberately does NOT wire MCP itself; it only launches `codex` in the
-# right directory. The strategic judgment (elaborate -> consult -> record
+# right directory. The strategic judgment (synthesize progress -> record
 # master_guidance -> dispatch) lives in that main agent and its skills, not here.
 #
 #   bash examples/ops/main-agent-tmux.sh

@@ -3,16 +3,16 @@
 > **Example, not core.** Everything under `examples/` is a copy-pasteable
 > demonstration of how to run Danus unattended and what a project looks like on
 > disk. **Nothing in the engine depends on `examples/`** — these scripts only wrap
-> the real interfaces (`bin/danus`, `bin/consult`, and the `python -m danus.*`
+> the real interfaces (`bin/danus` and the `python -m danus.*`
 > entry points). Each script also carries an "EXAMPLE, NOT CORE" banner so it is
 > never mistaken for the control path.
 
 Danus has exactly one unattended mode: **run codex as a
 resident main agent** (`ops/main-agent-tmux.sh`). The **strategic judgment** —
-elaborate → consult GPT → record `master_guidance` → dispatch workers — lives in
-that main agent and its skills (`elaboration`, `consult`), *not* in shell.
-The two loops here (`strategy-loop.sh`, `watchdog.sh`) are only the unattended
-**cadence** and **liveness** scaffolding around that agent.
+synthesize progress, record `master_guidance`, and dispatch workers — lives in
+that main agent and its skills (`elaboration`), *not* in shell.
+The `watchdog.sh` loop here is only the unattended **liveness** scaffolding
+around that agent.
 
 All scripts resolve paths through `scripts/env.sh` (no hardcoded absolute paths,
 no project names baked in) and take the project as a parameter. Operator-facing
@@ -31,27 +31,8 @@ bash examples/ops/main-agent-tmux.sh
 tmux attach -t danus-main        # watch / interact; DANUS_MAIN_TMUX overrides the name
 ```
 
-Requires `tmux` and the `claude` CLI on PATH. The main agent is the sole control
+Requires `tmux` and the `codex` CLI on PATH. The main agent is the sole control
 path — there is no separate Node CLI or persona-seed layer.
-
-### `strategy-loop.sh <project>`
-One parameterized strategic-cadence loop. Each beat it runs the consult CLI on
-the project's current elaboration and writes the reply under
-`runtime/projects/<project>/strategy/`. It does **not** record `master_guidance`
-or dispatch — that write goes through the gateway and is owned by the
-`consult` skill.
-
-```bash
-bash examples/ops/strategy-loop.sh <project>
-touch runtime/projects/<project>/.strategy.stop   # graceful stop at the next beat
-```
-
-- `DANUS_STRATEGY_BEAT` — seconds between consults (default `7200`, ~2h).
-- `DANUS_CONSULT_TRANSPORT` — `gpt_pro` (default), `claude_api`, `claude_code`, or `off`.
-  There is no `web`/`auto` transport.
-
-The loop consults only when an `elaboration.md` is present for the project; a
-real deployment consults on *new state*, not a blind timer.
 
 ### `watchdog.sh <project>`
 Liveness / stall alerting. Each beat it probes the verify service at

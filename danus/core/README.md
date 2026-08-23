@@ -41,7 +41,7 @@ lm.append("notes", {"thought": "..."}); lm.read("notes")
 gm = GlobalMemory(project_dir)
 gid = gm.append("counterexample", claim="...", evidence="...QED",   # evidence required
                 author="worker_xhigh", glossary={"X": "a manifold"})  # for verifiable kinds
-gm.append("master_guidance", claim="...", evidence="GPT-5.5-pro: ...", author="main_agent")
+gm.append("master_guidance", claim="...", evidence="main agent: ...", author="main_agent")
 gm.set_status(gid, "verified", fact_id="<id>")   # agent-driven status note
 gm.read("plan"); gm.search("query", kinds=["dead_end"])
 

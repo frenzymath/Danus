@@ -62,8 +62,8 @@ before a run can finish:
   high-reasoning `codex`, driven by the `write-paper` MCP service (which delegates to
   the shared `danus.authoring.driver`). Point it at
   your backend with the `DANUS_CODEX_BIN` / `DANUS_WRITE_PAPER_MODEL` / `DANUS_WRITE_PAPER_EFFORT` environment
-  variables (the per-service model/effort fall back to the neutral `DANUS_CODEX_MODEL` /
-  `DANUS_CODEX_EFFORT`), or have a working `codex` on `PATH`.
+  variables (the per-service model/effort fall back to the neutral `DANUS_MAIN_MODEL` /
+  `DANUS_MAIN_EFFORT`), or have a working `codex` on `PATH`.
 - **Network access**, for the reference **verifier** (`reference_verify`). Verifying bibliographic data
   (authors, title, venue, year, arXiv id) against the literature needs to reach the network. The
   reference chain is: the auditor tool flags offline (no tools/network); the verifier tool then
@@ -121,7 +121,7 @@ compilable paper on their own** — anchors only make the output sound more like
 This skill spans **two trees, split by reader**:
 
 ```
-.claude/skills/write-paper/        # MAIN-AGENT side — the main agent (codex) reads/runs this
+.agents/skills/write-paper/        # MAIN-AGENT side — the main agent (codex) reads/runs this
   SKILL.md                       # the orchestration contract (the main agent reads this)
   README.md                      # this file (human-facing setup)
   driver/
@@ -156,7 +156,7 @@ The split is by **who reads the file**: the main agent reads `SKILL.md` and runs
 `driver/` + `templates/`; the paper codex never reads disk — the `write-paper` MCP
 embeds the codex-facing `roles/style/boilerplate` into its prompt. So the
 codex-facing half lives under `agents/` alongside the other codex agents (`worker`,
-`verify`), not under `.claude/` (the main-agent side; codex reads it via the `.agents/skills` symlink).
+`verify`), while the main-agent side lives under `.agents/skills/` (codex reads it directly).
 
 ## Where it must live, and what it resolves at runtime
 
@@ -167,18 +167,19 @@ package), the codex driving now lives in the installed `danus.authoring` package
 shared one-shot isolated codex driver, used by both `danus.write_paper` and
 `danus.human_summary`), driven by the `write-paper` MCP service (which reads
 `DANUS_WRITE_PAPER_MODEL` / `DANUS_WRITE_PAPER_EFFORT` — falling back to the neutral
-`DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT` — and `DANUS_CODEX_BIN`, and calls the repo's `bin/codex`
+`DANUS_MAIN_MODEL` / `DANUS_MAIN_EFFORT` (with `DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT`
+honored as back-compat aliases) — and `DANUS_CODEX_BIN`, and calls the repo's `bin/codex`
 wrapper), and the assembler reads the fixed role/style/boilerplate files from the
 **codex-facing** half (located via `DANUS_WRITE_PAPER_SKILL_DIR`, default
 `<repo>/agents/skills/write-paper`). Lifted out on its own, these dependencies
 will not resolve; install it as part of the project.
 
-Install the two halves at `<repo>/.claude/skills/write-paper/` (main-agent side:
+Install the two halves at `<repo>/.agents/skills/write-paper/` (main-agent side:
 `SKILL.md` + `driver/` + `templates/`) and `<repo>/agents/skills/write-paper/`
 (codex-facing side: `roles/` + `style/` + `boilerplate/` + `examples/`).
 `seed_ledger.py` locates the enclosing repository by walking a fixed number of
 parents up from its own path
-(`.../.claude/skills/write-paper/driver/seed_ledger.py`), and `bin/write-paper-mcp`
+(`.../.agents/skills/write-paper/driver/seed_ledger.py`), and `bin/write-paper-mcp`
 defaults `DANUS_WRITE_PAPER_SKILL_DIR` to the codex-facing half — so neither layout
 is optional (or set `DANUS_WRITE_PAPER_SKILL_DIR` explicitly).
 

@@ -173,13 +173,13 @@ def test_write_status_atomic_and_stamps(tmp: Path):
 def test_read_role_defaults_and_overrides(tmp: Path):
     wl = L.WorkerLayout(tmp / "proj" / "workers" / "xhigh")
     wl.dir.mkdir(parents=True)
-    # no .role -> defaults (the neutral DANUS_CODEX_MODEL unset → the built-in
-    # gpt-5.5 default)
-    with _env(DANUS_CODEX_MODEL=None):
+    # no .role -> defaults (the neutral model unset → the built-in gpt-5.6-sol
+    # default)
+    with _env(DANUS_WORKER_MODEL=None, DANUS_MAIN_MODEL=None, DANUS_CODEX_MODEL=None):
         role = loop._read_role(wl)
-    assert role["MODEL"] == "gpt-5.5" and role["ROLE"] == "high" and role["DANUS_AUTHOR"] == "xhigh"
+    assert role["MODEL"] == "gpt-5.6-sol" and role["ROLE"] == "high" and role["DANUS_AUTHOR"] == "xhigh"
     # the neutral DANUS_CODEX_MODEL is the worker default when .role omits MODEL
-    with _env(DANUS_CODEX_MODEL="neutral-model"):
+    with _env(DANUS_WORKER_MODEL=None, DANUS_MAIN_MODEL=None, DANUS_CODEX_MODEL="neutral-model"):
         role = loop._read_role(wl)
     assert role["MODEL"] == "neutral-model"
     wl.role.write_text("# comment\nMODEL=gpt-x\nREASONING_EFFORT=xhigh\n\nROLE=xhigh\n")

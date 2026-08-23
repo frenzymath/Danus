@@ -18,7 +18,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILL_DIR = _REPO_ROOT / "agents" / "skills" / "write-paper"          # codex-facing assets (roles/style/boilerplate/examples)
 EXAMPLE_PROJECT = SKILL_DIR / "examples" / "paper" / "project"
-MAIN_SKILL_DIR = _REPO_ROOT / ".claude" / "skills" / "write-paper"    # main-agent side (SKILL.md / driver / templates)
+MAIN_SKILL_DIR = _REPO_ROOT / ".agents" / "skills" / "write-paper"    # main-agent side (SKILL.md / driver / templates)
 
 _MINIMAL_TEX = (
     "\\documentclass{amsart}\n"

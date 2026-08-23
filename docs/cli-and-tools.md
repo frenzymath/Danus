@@ -86,7 +86,7 @@ context. Each tool returns a small honest envelope (status + paths + flags + a
 Most tools take an optional `paper_id` — a project can hold multiple papers (the
 default paper uses the legacy `<project>/paper/` workspace; any other `paper_id`
 gets an isolated `<project>/papers/<paper_id>/`). See the write-paper skill README
-(`.claude/skills/write-paper/README.md`) for the full workflow.
+(`.agents/skills/write-paper/README.md`) for the full workflow.
 
 ---
 
@@ -104,8 +104,8 @@ language in `OPERATOR.md`).
 ## Main-agent skills (invoked in-session, not MCP tools)
 
 The main agent also has codex **skills** under `.agents/skills/`:
-`initialize` (first-run setup), `elaboration` (the strategy synthesis),
-`consult` (the strategy consult), `human-summary`, and `write-paper`. These
+`initialize` (first-run setup), `elaboration` (the strategy synthesis the main
+agent reasons over to set direction), `human-summary`, and `write-paper`. These
 orchestrate the tools and CLI above; see `operating-guide.md` for how they fit the
 lifecycle.
 

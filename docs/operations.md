@@ -62,15 +62,12 @@ bash scripts/check-codex.sh     # one live codex ping + scan recent logs for API
     ok   python dep: mcp
     ok   python pkg: danus (importable from any cwd)
     ok   python deps: fastapi/uvicorn/pydantic
-    ok   python dep: openai (gpt_pro consult)
-    ok   python dep: anthropic (claude_api consult)
     ok   node: .../runtime/node22/bin/node
     ok   codex: codex-cli 0.142.5
     ok   codex login ok (/home/you/codex-home)
     ok   verify service up :8091 (ours)
     warn no pdflatex on PATH (write-paper PDF render needs it; set TEX_ENGINE or install TeX)
     ok   chrome: /usr/bin/chromium-browser (human-summary PDF)
-  consult transport: gpt_pro
   done.
   ```
 
@@ -115,8 +112,6 @@ Under `examples/ops/` (parameterized; nothing in the engine depends on them):
 - `main-agent-tmux.sh` — run codex (the main agent) detached in a tmux
   session, so strategic beats continue while you are away. **The only unattended
   mode.**
-- `strategy-loop.sh <project>` — fire a strategy consult on a cadence
-  (`DANUS_STRATEGY_BEAT`, default ~2h) when an elaboration is present.
 - `watchdog.sh <project>` — probe verify `/health` + parse `danus status`; alarm via
   a generic `DANUS_NOTIFY` hook on a `stuck?`/`dead`/`error` worker or a down verify.
 

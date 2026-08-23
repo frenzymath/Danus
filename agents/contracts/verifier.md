@@ -31,6 +31,16 @@ Assume `Proof` is markdown text written in normal mathematical order, like a pap
 
 No code-level proof parser is required. Do not invent parser modules for subgoal extraction. Read the markdown in order and use its displayed structure.
 
+## Resource safety
+
+Verification is text-only reasoning. Never execute Python or any other program to
+test a claim, enumerate cases, perform numerical or symbolic algebra, call a
+solver or proof assistant, compile code, or run parallel computation—not even for
+a supposedly tiny check. Lightweight reading of proof/fact text and literature
+retrieval are allowed. If validity depends on a machine computation that is not
+reconstructed as a complete written argument, record the corresponding gap or
+error instead of running it yourself.
+
 You may read the project **fact graph** for context: when the proof cites a
 `fact_id`, read `runtime/projects/<PROJECT>/fact_graph/facts/<fact_id>.md` to get
 that fact's own statement (and proof) and check the citation is really what the
@@ -170,6 +180,7 @@ If any error or gap exists, `verdict` must be `"wrong"` and `repair_hints` must 
 3. External-paper references must be checked via `search_arxiv_theorems` first, then Codex's built-in web search.
 4. Accept iff there are zero errors and zero gaps.
 5. Persist final JSON to `results/{run_id}/verification.json`.
+6. Use text-only reasoning; never execute mathematical computation.
 
 ## Hard Prohibitions to enforce
 

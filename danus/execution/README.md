@@ -37,7 +37,8 @@ not process state — a fresh `start` rebuilds context from memory + the fact gr
 
 ## Connects to
 
-Reads `TASK.md` (from `danus assign`) + `master_guidance` (strategy). Writes facts
+Reads `TASK.md` (from `danus assign`) + `master_guidance` (the main agent's own
+periodic direction). Writes facts
 only via a worker's `fact_submit` (gateway → verify). The loop itself never writes
 the truth stores — it only scrapes the resulting `fact_id` from the round log for
 status.

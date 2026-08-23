@@ -25,6 +25,14 @@ glossary-coverage check, calls the verifier, and writes the fact to the fact gra
   partial result as a building block is the single biggest correctness risk.** When
   in doubt, submit.
 
+Choose a substantive mathematical boundary, not the smallest checkable line.
+Routine calculations, substitutions, and bookkeeping identities should normally
+remain internal steps in the proof of a deeper fact. The submitted fact should
+state one mathematically significant conclusion; depth must not be simulated by
+bundling several shallow or unrelated claims. Split supporting claims only when
+they have independent downstream uses, separate proof obligations, or need
+isolated verifier repair.
+
 Do **not** build on an unverified finding from global memory. A `conclusion` /
 `example` / `counterexample` there is awareness, not a brick — re-derive it as a
 self-contained statement+proof and submit it before relying on it.
