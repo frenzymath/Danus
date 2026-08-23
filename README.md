@@ -29,22 +29,20 @@ along the way.
 
 See `ARCHITECTURE.md` for the layered design and the map of every module.
 
-## Two orchestrator options
+## Orchestrator options
 
-The workers and the verifier always run on **codex**. The **main agent (the
-orchestrator)** can run on either runtime — pick one:
+The workers and the verifier always run on **codex**. On **this branch the main
+agent (the orchestrator) also runs on codex**, so you install **nothing beyond
+codex** — no Claude Code. It reasons directly between rounds (optionally spawning
+exploratory codex subagents) and authors its own `master_guidance`; there is no
+external strategy-consult step. Runtime: `AGENTS.md` + `.codex/config.toml` +
+`.agents/skills/`.
 
-- **Claude Code — recommended (the [`main` branch](https://github.com/frenzymath/Danus/tree/main)).**
-  Best results with **Fable** as the orchestrator model. Requires
-  the Claude Code CLI in addition to your codex backend.
-- **codex — for convenience (this branch, tag `v0.1.0-codex`).** The orchestrator
-  runs on codex too, so you install **nothing beyond codex** — no Claude Code. Same
-  engine, workers, and verifier; only the main-agent runtime differs (`AGENTS.md` +
-  `.codex/config.toml` + `.agents/skills/` in place of `CLAUDE.md` + `.mcp.json` +
-  `.claude/skills/`).
-
-Fable-via-Claude-Code is the recommended orchestrator; **this** fully-codex line
-exists so a codex-only setup works out of the box.
+A separate [`main` branch](https://github.com/frenzymath/Danus/tree/main) runs the
+orchestrator on **Claude Code** instead (Fable as the orchestrator model, an
+external strategy consult, and a `CLAUDE.md` + `.mcp.json` + `.claude/skills/`
+runtime). It shares the same worker–verifier proof core. Use `main` if you
+specifically want the Claude Code orchestrator.
 
 ## How it works
 
