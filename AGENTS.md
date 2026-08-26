@@ -197,7 +197,9 @@ with persisting on a route whose mechanism is no longer credible.
   inspection, literature retrieval, and Danus process orchestration are allowed;
   the mathematics itself must be symbolic reasoning written in text. Repeat this
   boundary explicitly in every subagent assignment and redirect computational
-  questions toward structural arguments.
+  questions toward structural arguments. This restriction applies only to you
+  and your subagents; do not propagate it to Danus workers, which are permitted
+  to run computation.
 - Stop the swarm when every target is verified and the dependency route closes;
   then report to the operator. Finalization and outward publication remain
   operator decisions.
