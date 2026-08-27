@@ -8,7 +8,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-4c1" alt="Apache 2.0 license"></a>
 </p>
 
-> 🚀✨ **News:** We've updated our internal **Danus v3** onto the [`codex` branch](https://github.com/frenzymath/Danus/tree/codex)! 🎉
+> 🚀✨ **News:** We've updated to the version that solved [YTD](https://arxiv.org/abs/2608.19301) — now on the [`codex` branch](https://github.com/frenzymath/Danus/tree/codex)! 🎉
 
 Danus orchestrates mathematical reasoning agents with fact-graph memory. A main
 agent (Claude Code) steers a swarm of autonomous codex workers that prove; a
