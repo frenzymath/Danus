@@ -53,8 +53,8 @@ python -m danus.verify          # 127.0.0.1:8091, default CODEX_TIMEOUT_SECONDS=
 
 Binds **loopback by default** (set `VERIFY_HOST=0.0.0.0` if the
 gateway runs on another host). Needs a codex CLI: set **`DANUS_CODEX_BIN`** (or
-`codex` on PATH / the repo's `bin/codex` wrapper) and
-an account via `CODEX_HOME` — **there is no built-in fallback path** (BYO). The
+`codex` on PATH / the repo's `bin/codex` wrapper) and native Codex authentication
+(a stored ChatGPT login or `CODEX_API_KEY`). The
 verifier agent runs `python -m danus.gateway`, so `danus` must be installed in that
 environment.
 

@@ -112,9 +112,10 @@ examples/              unattended-ops examples + a toy project
 # 1. provision the toolchain (Node + venv + codex CLI) into runtime/
 bash scripts/bootstrap.sh
 
-# 2. configure — copy the templates and fill in YOUR keys (never committed)
+# 2. configure Danus, then use either native Codex authentication path
 cp config/danus.env.example config/danus.env
-cp config/codex.env.example config/codex.env      # BYO OpenAI-compatible endpoint + key
+bin/codex login --device-auth                      # ChatGPT subscription
+# or: cp config/codex.env.example config/codex.env # set standard CODEX_API_KEY
 
 # 3. health check + bring up the verify service (REQUIRED for any proving)
 bash scripts/doctor.sh
@@ -128,8 +129,8 @@ bash scripts/services.sh up verify
 codex --dangerously-bypass-approvals-and-sandbox
 ```
 
-Everything runs on your own keys (BYO). Workers and the verifier run on your codex
-backend. The main agent steers by reasoning itself between rounds — optionally
+Workers and the verifier use Codex's native authentication and provider
+selection. The main agent steers by reasoning itself between rounds — optionally
 spawning exploratory codex subagents — and publishes its own periodic direction
 to the swarm as `master_guidance`.
 

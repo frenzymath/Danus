@@ -15,7 +15,7 @@
 DANUS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 export DANUS_ROOT
 
-# 0) codex backend (BYO OpenAI-compatible endpoint + key; gitignored)
+# 0) optional standard Codex API key (native stored login also works; gitignored)
 if [ -f "$DANUS_ROOT/config/codex.env" ]; then
   set -a; . "$DANUS_ROOT/config/codex.env"; set +a
 fi
@@ -34,11 +34,10 @@ fi
 export DANUS_RUNTIME="${DANUS_RUNTIME:-$DANUS_ROOT/runtime}"
 export DANUS_AGENTS_ROOT="${DANUS_AGENTS_ROOT:-$DANUS_RUNTIME/projects}"
 export VERIFIER_RESULTS_DIR="${VERIFIER_RESULTS_DIR:-$DANUS_RUNTIME/verify-runs}"
-export CODEX_HOME="${CODEX_HOME:-$DANUS_RUNTIME/codex-home}"
 export VERIFY_PORT="${VERIFY_PORT:-8091}"
 export DASHBOARD_PORT="${DASHBOARD_PORT:-8099}"
 export DANUS_VERIFY_URL="${DANUS_VERIFY_URL:-http://127.0.0.1:${VERIFY_PORT}/verify}"
-export DANUS_MAIN_MODEL="${DANUS_MAIN_MODEL:-${DANUS_CODEX_MODEL:-${CODEX_API_MODEL:-gpt-5.6-sol}}}"   # neutral default model for every danus-spawned codex call (honors a set DANUS_CODEX_MODEL alias or the api backend model)
+export DANUS_MAIN_MODEL="${DANUS_MAIN_MODEL:-${DANUS_CODEX_MODEL:-gpt-5.6-sol}}"   # neutral default model for every danus-spawned codex call (honors the DANUS_CODEX_MODEL alias)
 export DANUS_MAIN_EFFORT="${DANUS_MAIN_EFFORT:-${DANUS_CODEX_EFFORT:-xhigh}}"   # neutral default reasoning effort (honors the DANUS_CODEX_EFFORT alias)
 export DANUS_WORKER_MODEL="${DANUS_WORKER_MODEL:-$DANUS_MAIN_MODEL}"   # worker-only model (defaults to the neutral model above)
 # back-compat: keep the old names populated for any shell consumer that still
@@ -46,7 +45,6 @@ export DANUS_WORKER_MODEL="${DANUS_WORKER_MODEL:-$DANUS_MAIN_MODEL}"   # worker-
 export DANUS_CODEX_MODEL="$DANUS_MAIN_MODEL"
 export DANUS_CODEX_EFFORT="$DANUS_MAIN_EFFORT"
 export DANUS_CHROME_BIN="${DANUS_CHROME_BIN:-}"        # headless Chrome/Chromium for human-summary PDF (empty = auto-detect)
-export CODEX_BACKEND="${CODEX_BACKEND:-api}"            # api (BYO key) | chatgpt (your login)
 
 # 4) PATH: bin wrappers first, then the provisioned node + venv (if bootstrapped)
 _danus_path="$DANUS_ROOT/bin"
@@ -67,7 +65,7 @@ if [ "${DANUS_ENV_VERBOSE:-0}" = "1" ]; then
   echo "DANUS_PY=$DANUS_PY"
   echo "DANUS_AGENTS_ROOT=$DANUS_AGENTS_ROOT"
   echo "DANUS_VERIFY_URL=$DANUS_VERIFY_URL"
-  echo "CODEX_HOME=$CODEX_HOME"
+  echo "CODEX_HOME=${CODEX_HOME:-<codex default>}"
 fi
 
 # 6) verify-service identity probe (shared by doctor.sh / services.sh).

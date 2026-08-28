@@ -6,49 +6,23 @@ chain and fills defaults:
 
 ```
 config/codex.env  →  config/danus.env  →  runtime/runtime.env  →  built-in defaults
-   (BYO backend)      (host/account)      (machine paths, auto)   (scripts/env.sh)
+   (API key)          (host/account)      (machine paths, auto)   (scripts/env.sh)
 ```
 
 Only `*.env.example` templates are committed; copy them to the real names and edit.
 The `bin/` wrappers source `env.sh` for you. Values below are the defaults from
 `scripts/env.sh` / `config/danus.env.example`.
 
-## Codex backend (workers + verifier)
+## Codex authentication
 
 | variable | default | meaning |
 |---|---|---|
-| `CODEX_BACKEND` | `api` | `api` (BYO OpenAI-compatible key) or `chatgpt` (your ChatGPT login) |
-| `CODEX_HOME` | `runtime/codex-home` | codex auth/config home (gitignored) |
-| `CODEX_API_BASE_URL` | — | (api) your OpenAI-compatible Responses endpoint |
-| `CODEX_API_MODEL` | `gpt-5.6-sol` | (api) backend model |
-| `DANUS_CODEX_API_KEY` | — | (api) key, **read at run time**, never stored in a file |
+| `CODEX_API_KEY` | — | standard Codex API-key authentication; store only in gitignored `config/codex.env` |
+| `CODEX_HOME` | Codex default | optional override for an intentionally isolated native Codex profile |
 
-These live in `config/codex.env`. See `getting-started.md` §2 and
-`scripts/setup-codex.sh`.
-
-### Per-project worker API override (optional, opt-in, Azure only)
-
-By default every codex call (workers, main agent, verifier, renderers) uses the
-backend above. You can optionally route **one project's worker rounds** to a
-separate Azure resource while everything else stays on the default backend. Put
-the following in gitignored `config/codex.env`, replacing `<PROJECT>` with the
-uppercased project name (non-alphanumeric runs → `_` — e.g. project `myproject`
-→ `MYPROJECT`):
-
-| variable | meaning |
-|---|---|
-| `DANUS_PROJECT_<PROJECT>_WORKER_API_PROVIDER` | currently `azure` |
-| `DANUS_PROJECT_<PROJECT>_WORKER_API_BASE_URL` | Azure Responses base ending in `/openai` (e.g. `https://your.openai.azure.com/openai`) |
-| `DANUS_PROJECT_<PROJECT>_WORKER_API_VERSION` | Azure Responses API version |
-| `DANUS_PROJECT_<PROJECT>_WORKER_API_KEY` | project worker key; passed in the child environment only, never on argv |
-
-The override is **additive and fails closed**: a partial profile (some of the
-four set, some missing) is refused rather than silently falling back, and with no
-`DANUS_PROJECT_*` set worker launch is byte-identical to before. It affects only
-that project's worker rounds — the main agent, verifier, and renderers are
-untouched. Changing a profile requires restarting that project's worker loops;
-their mathematical continuity lives in local memory, global memory, and the fact
-graph.
+When `CODEX_API_KEY` is absent, Codex uses its stored native login. Run
+`bin/codex login --device-auth` to authenticate with a ChatGPT subscription.
+Danus does not construct or select model providers.
 
 ## Models & reasoning effort
 

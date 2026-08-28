@@ -40,7 +40,7 @@ Danus/
 ├─ ARCHITECTURE.md              this file (map + invariants + interface contract)
 ├─ README.md   pyproject.toml   top-level intro + the installable `danus` package
 ├─ .gitignore  .codex/          MCP wiring (`config.toml`): the `danus` gateway + the `write-paper` and `human-summary` services
-├─ config/                      env templates (BYO key; only *.env.example committed)
+├─ config/                      env templates (standard Codex key; only *.env.example committed)
 ├─ danus/                       THE ENGINE (installable Python package)
 │  ├─ core/                     ⑤ truth: schema · factgraph · global/local memory · bm25 · glossary
 │  ├─ gateway/                  ⑥ role-gated MCP: 6 tools · role table (roles.py)
@@ -62,7 +62,7 @@ Danus/
 │  ├─ elaboration/  human-summary/  initialize/
 │  └─ write-paper/              the recipe SKILL.md + driver/ scripts + templates/
 ├─ bin/                         thin wrappers: danus · danus-mcp · write-paper-mcp · human-summary-mcp · codex
-├─ scripts/                     bootstrap · doctor · services · env · setup/check-codex · start-verify/-dashboard · recover · install-tex
+├─ scripts/                     bootstrap · doctor · services · env · check-codex · start-verify/-dashboard · recover · install-tex
 ├─ docs/                        human docs: getting started · concepts · operating guide · security & trust · …
 └─ examples/                    unattended-ops examples + a toy project
 ```
@@ -91,8 +91,9 @@ Danus/
    subagents — distills the project's state into an `elaboration`, and writes the
    direction it decides on as the swarm's `master_guidance`. This periodic steer
    is not optional — it is how the swarm gets steered.
-7. Portable and BYO. No hardcoded absolute paths, no committed secrets; keys come
-   from gitignored `config/*.env` (templates committed as `*.example`).
+7. Native Codex authentication. Danus does not construct model providers; Codex
+   uses its stored ChatGPT login or the standard `CODEX_API_KEY`. No hardcoded
+   absolute paths or committed secrets; keys live in gitignored `config/*.env`.
 8. Clean author context. Any agent that produces an artifact for an outside
    audience (a paper, a human report) is a fresh isolated codex fed a scoped,
    machinery-free prompt, never the orchestrator's own contaminated window. It

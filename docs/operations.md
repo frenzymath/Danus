@@ -45,36 +45,34 @@ of `up` invocations, so a restart can replay them (see recovery).
 
 ```bash
 bash scripts/doctor.sh          # green / FAIL / warn across the whole stack
-bash scripts/check-codex.sh     # one live codex ping + scan recent logs for API errors
+bash scripts/check-codex.sh     # native auth status + scan recent request logs
 ```
 
 - `doctor.sh` is read-only: config files, python + verify deps, node, the codex
-  wrapper + backend, a live verify `/health`, and soft checks for `pdflatex` /
-  Chrome. Run it whenever something looks off. A real healthy run (chatgpt backend,
+  wrapper + native authentication, a live verify `/health`, and soft checks for
+  `pdflatex` / Chrome. Run it whenever something looks off. A real healthy run,
   no TeX installed):
 
   ```
   == Danus doctor ==
   DANUS_ROOT=/home/you/Danus
     ok   config/danus.env present
-    ok   config/codex.env present
     ok   python: .../runtime/venv/bin/python
     ok   python dep: mcp
     ok   python pkg: danus (importable from any cwd)
     ok   python deps: fastapi/uvicorn/pydantic
     ok   node: .../runtime/node22/bin/node
     ok   codex: codex-cli 0.142.5
-    ok   codex login ok (/home/you/codex-home)
+    ok   codex native authentication configured
     ok   verify service up :8091 (ours)
     warn no pdflatex on PATH (write-paper PDF render needs it; set TEX_ENGINE or install TeX)
     ok   chrome: /usr/bin/chromium-browser (human-summary PDF)
   done.
   ```
 
-  (`warn` lines are soft/optional deps, not failures; on the api backend the codex
-  lines read `codex backend: api provider configured` + `codex API live ping ok`.)
-- `check-codex.sh` exits `0` if the backend answered; history in
-  `runtime/logs/codex-health.jsonl`. Use it when workers/verify show API errors.
+  (`warn` lines are soft/optional dependencies, not failures.)
+- `check-codex.sh` exits `0` if native authentication is configured; history in
+  `runtime/logs/codex-health.jsonl`. It also flags recent request errors.
 
 ## Recovery after a host restart
 
@@ -82,8 +80,8 @@ bash scripts/check-codex.sh     # one live codex ping + scan recent logs for API
 bash scripts/recover.sh
 ```
 
-One command: re-runs `bootstrap.sh` (rebuilds the possibly-dangling venv + codex
-provider), clears stale pidfiles, **replays the `runtime/run/autostart` manifest**
+One command: re-runs `bootstrap.sh` (rebuilds the possibly-dangling venv + Codex
+runtime), clears stale pidfiles, **replays the `runtime/run/autostart` manifest**
 (brings the services back up), and prints codex + services health. Idempotent.
 
 > Note: after a restart, worker loops are **not** auto-resumed by `recover.sh` — it
@@ -103,7 +101,7 @@ danus stop   <project> --force  # kill the process group now
   a graceful stop lets an in-flight round finish (no lost verified work). `--force`
   kills a live codex child.
 - `status` shows a `stuck?` soft signal when a running round exceeds ~1.5× the hard
-  timeout — investigate (often a flaky backend); decide stop/restart.
+  timeout — investigate recent Codex logs; decide stop/restart.
 
 ## Unattended operation (examples, not core)
 

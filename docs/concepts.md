@@ -97,8 +97,8 @@ new state:
 4. **Monitor** — watch progress; repeat when there is genuinely new state.
 
 The steer is the main agent's own reasoning — there is no external strategy
-transport to configure. Workers and the verifier always run on your own codex
-backend.
+transport to configure. Workers and the verifier use Codex's native
+authentication and provider selection.
 
 ## The lifecycle of a project
 
@@ -113,7 +113,7 @@ initialize ─▶ new project ─▶ strategy loop ⇄ worker swarm ─▶ verif
                                                                (publishable LaTeX)
 ```
 
-- **initialize** — first-run setup: your profile, the codex backend, the git
+- **initialize** — first-run setup: your profile, native Codex authentication, the git
   branch, the spend ceiling; brings the verify service up.
 - **new** — create a project (`PROBLEM.md` + a worker roster). One project = one
   problem, its own memory and fact graph.

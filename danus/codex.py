@@ -25,13 +25,10 @@ renderers pass ``DANUS_WRITE_PAPER_MODEL`` / ``DANUS_HUMAN_SUMMARY_MODEL``).
 
 from __future__ import annotations
 
-import json
 import os
-import re
 import shutil
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 # danus/codex.py → repo root is one parent up; the deployment's bin/codex wrapper
 # lives at <repo>/bin/codex.
@@ -39,84 +36,6 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_MODEL = "gpt-5.6-sol"
 DEFAULT_EFFORT = "xhigh"
-
-_PROJECT_WORKER_KEY_ENV = "DANUS_PROJECT_WORKER_API_KEY"
-
-
-@dataclass(frozen=True)
-class ProjectWorkerApi:
-    """One optional API override selected from the worker's project name."""
-
-    provider: str
-    base_url: str
-    api_version: str
-    api_key: str
-
-
-def _project_worker_prefix(project: str) -> str:
-    token = re.sub(r"[^A-Za-z0-9]+", "_", project).strip("_").upper()
-    if not token:
-        raise ValueError("worker project name has no environment-safe characters")
-    return f"DANUS_PROJECT_{token}_WORKER_API_"
-
-
-def project_worker_api(project: str) -> Optional[ProjectWorkerApi]:
-    """Return a project-scoped worker API override, if configured.
-
-    Secrets remain in the gitignored ``config/codex.env`` and enter Codex only
-    through the child environment. A partial profile fails closed instead of
-    silently sending that project's traffic through the shared default API.
-    """
-    prefix = _project_worker_prefix(project)
-    names = {
-        "provider": prefix + "PROVIDER",
-        "base_url": prefix + "BASE_URL",
-        "api_version": prefix + "VERSION",
-        "api_key": prefix + "KEY",
-    }
-    values = {field: os.environ.get(name, "").strip() for field, name in names.items()}
-    if not any(values.values()):
-        return None
-    missing = [names[field] for field, value in values.items() if not value]
-    if missing:
-        raise ValueError(
-            f"incomplete worker API profile for project {project!r}; missing "
-            + ", ".join(missing)
-        )
-    if values["provider"].lower() != "azure":
-        raise ValueError(
-            f"unsupported worker API provider for project {project!r}: "
-            f"{values['provider']!r} (supported: azure)"
-        )
-    return ProjectWorkerApi(**values)
-
-
-def project_worker_config_args(project: str) -> List[str]:
-    """Codex CLI overrides for a project's worker-only model provider.
-
-    Provider/auth keys in a cwd-local ``.codex/config.toml`` are intentionally
-    ignored by Codex. Command-line config is machine-local precedence, while the
-    credential itself is referenced by environment-variable name and never put
-    in argv.
-    """
-    profile = project_worker_api(project)
-    if profile is None:
-        return []
-    provider_id = "danus_project_worker"
-    provider = (
-        f"model_providers.{provider_id}={{"
-        'name="Danus project worker Azure",'
-        f"base_url={json.dumps(profile.base_url)},"
-        'wire_api="responses",'
-        f"query_params={{api-version={json.dumps(profile.api_version)}}},"
-        f'env_http_headers={{"api-key"="{_PROJECT_WORKER_KEY_ENV}"}},'
-        "supports_websockets=false}"
-    )
-    return [
-        "--config", f'model_provider="{provider_id}"',
-        "--config", provider,
-    ]
-
 
 def resolve_bin() -> str:
     """Resolve the codex binary at CALL time. Precedence:
@@ -174,7 +93,7 @@ def effort(*override_env_names: str, default: str = DEFAULT_EFFORT) -> str:
     )
 
 
-def subprocess_env(codex_bin: str, *, worker_project: Optional[str] = None) -> Dict[str, str]:
+def subprocess_env(codex_bin: str) -> Dict[str, str]:
     """A copy of ``os.environ`` with the codex binary's DIR prepended to ``PATH``
     so its ``#!/usr/bin/env node`` shebang resolves regardless of how the caller
     was launched.
@@ -183,11 +102,6 @@ def subprocess_env(codex_bin: str, *, worker_project: Optional[str] = None) -> D
     path); the bare ``"codex"`` fallback must NOT inject the CWD into the
     subprocess PATH.
 
-    When ``worker_project`` names a project with a configured per-project worker
-    API profile, the profile's key is injected under the neutral child-only env
-    name ``DANUS_PROJECT_WORKER_API_KEY`` (referenced by the inline provider
-    config from ``project_worker_config_args``). The shared Azure/OpenAI vars used
-    by main agents, verifiers, and renderers are left untouched.
     """
     env = os.environ.copy()
     if os.path.dirname(codex_bin):
@@ -197,10 +111,6 @@ def subprocess_env(codex_bin: str, *, worker_project: Optional[str] = None) -> D
             parts = existing.split(os.pathsep) if existing else []
             if codex_dir not in parts:
                 env["PATH"] = codex_dir + (os.pathsep + existing if existing else "")
-    if worker_project is not None:
-        profile = project_worker_api(worker_project)
-        if profile is not None:
-            env[_PROJECT_WORKER_KEY_ENV] = profile.api_key
     return env
 
 

@@ -93,14 +93,14 @@ use an SSH port-forward rather than binding a public interface. (`VERIFY_HOST` /
 the dashboard `--host` can change the bind, but the safe default is loopback — do
 not expose these to an untrusted network.)
 
-## 6. Secrets: bring your own key, never committed
+## 6. Secrets: use native Codex authentication, never commit keys
 
-- All credentials (codex backend key, LaTeX-git token) live **only** in
-  gitignored `config/*.env` files. The tree ships `*.env.example` placeholders only —
-  **no working key is committed.**
-- The codex backend key is **read at run time from an environment variable**; it is
-  **not** written into any config file that Danus generates (e.g. the codex
-  `config.toml` references the env var name, not the value).
+- Codex authentication uses its native stored ChatGPT login or the standard
+  `CODEX_API_KEY` environment variable. If you keep the key in this checkout,
+  put it only in the gitignored `config/codex.env`; the tree ships a placeholder
+  example and no working credentials.
+- Other credentials, such as a LaTeX-git token, likewise belong only in
+  gitignored `config/*.env` files.
 - Before any commit, confirm `git status` shows no `config/*.env` and no `runtime/`.
 
 ## 7. The deterministic pre-checks (a safety net, and a caveat)

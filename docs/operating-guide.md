@@ -24,7 +24,7 @@ spend past the ceiling?); everything else the main agent acts on and reports.
 ## 0. First session — initialize
 
 On a fresh deployment the main agent runs `initialize`: it interviews you (how to
-address you + language, git branch off `main`, spend ceiling, codex backend),
+address you + language, git branch off `main`, spend ceiling, Codex authentication),
 fills `OPERATOR.md` + `config/danus.env`, brings up the verify
 service, and marks `runtime/.danus-initialized`. After that, every session
 re-reads your `OPERATOR.md` and the project's `PROBLEM.md`.

@@ -7,8 +7,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../scripts/env.sh"
 mkdir -p "$DANUS_RUNTIME/logs" "$VERIFIER_RESULTS_DIR"
 export DANUS_CODEX_BIN="${DANUS_CODEX_BIN:-$DANUS_ROOT/bin/codex}"   # the provisioned codex wrapper
-export CODEX_HOME
 export CODEX_TIMEOUT_SECONDS="${CODEX_TIMEOUT_SECONDS:-900}"
 export VERIFY_HOST="${VERIFY_HOST:-127.0.0.1}" VERIFY_PORT
-echo "[start-verify] port=$VERIFY_PORT model=${DANUS_VERIFY_MODEL:-$DANUS_MAIN_MODEL}/${DANUS_VERIFY_EFFORT:-$DANUS_MAIN_EFFORT} CODEX_HOME=$CODEX_HOME"
+echo "[start-verify] port=$VERIFY_PORT model=${DANUS_VERIFY_MODEL:-$DANUS_MAIN_MODEL}/${DANUS_VERIFY_EFFORT:-$DANUS_MAIN_EFFORT} CODEX_HOME=${CODEX_HOME:-<codex default>}"
 exec "$DANUS_PY" -m danus.verify

@@ -1,6 +1,6 @@
 ---
 name: initialize
-description: First-run setup interview for a Danus deployment. Run it on the FIRST session, whenever runtime/.danus-initialized is absent or OPERATOR.md is still the blank template, or when the operator asks to set up / initialize / onboard / re-configure. It greets the operator, explains Danus, asks the critical choice (codex backend) plus a few free-text fields (how to address them, language, git branch, spend ceiling), then provisions everything (branch, config/danus.env, OPERATOR.md, codex login, verify service) and marks runtime/.danus-initialized. The system cannot run without these answers, so do not skip it.
+description: First-run setup interview for a Danus deployment. Run it on the FIRST session, whenever runtime/.danus-initialized is absent or OPERATOR.md is still the blank template, or when the operator asks to set up / initialize / onboard / re-configure. It greets the operator, explains Danus, asks the critical choice (Codex authentication) plus a few free-text fields (how to address them, language, git branch, spend ceiling), then provisions everything (branch, config/danus.env, OPERATOR.md, Codex authentication, verify service) and marks runtime/.danus-initialized. The system cannot run without these answers, so do not skip it.
 ---
 
 # initialize — first-run setup interview
@@ -35,30 +35,29 @@ Ask this multiple-choice question in the chat (state the options; put the
 recommended one first and label it). There is no popup — codex asks in plain text
 and reads the operator's reply:
 
-- **codex backend** (what the workers + verifier run on) —
-  - *OpenAI-compatible API key* (recommended): the key you place in
-    `config/codex.env` — works immediately, no login.
-  - *My own ChatGPT subscription*: device-code login.
+- **Codex authentication** (shared by the workers + verifier) —
+  - *OpenAI API key* (recommended for automation): set the standard
+    `CODEX_API_KEY` in `config/codex.env` — no login flow.
+  - *My own ChatGPT subscription*: native Codex device-code login.
 
 Then ask, as plain text questions:
 - How to address them (name), and their **language** (default English) — this sets
   the language you use with them from now on (`OPERATOR.md` records it).
 - The **git working branch** name (default `deploy/<operator-or-host>`).
-- If they chose the **paid-API** backend: a **spend ceiling** (USD) to warn at.
+- If they chose the **API-key** path: a **spend ceiling** (USD) to warn at.
 
 ## 3. Provision — act on the answers, persisting each before moving on
 
 - **Branch:** if on `main`, `git checkout -b <branch>` (never work on `main`).
-- **Config:** `cp -n config/danus.env.example config/danus.env`; set `CODEX_BACKEND`
-  to their choice. If the backend is
-  the OpenAI-compatible key, `cp -n config/codex.env.example config/codex.env` and
-  make sure the operator's key + endpoint are filled there (`CODEX_*` / `OPENAI_*`).
-  Never put secrets anywhere but `config/*.env`.
+- **Config:** `cp -n config/danus.env.example config/danus.env`. For API-key
+  authentication, `cp -n config/codex.env.example config/codex.env` and set
+  `CODEX_API_KEY`. Never put secrets anywhere but `config/*.env`.
 - **OPERATOR.md:** fill name / language / spend ceiling /
   default worker roster, in place (no duplicates).
-- **codex:** backend=api → `bash scripts/check-codex.sh` (confirm reachable);
-  backend=chatgpt → **you** run `bash scripts/setup-codex.sh login` and give the
-  operator the printed URL + device code (they only open it and authorize).
+- **Codex:** API key → `bash scripts/check-codex.sh` (confirm configured);
+  ChatGPT → **you** run `bin/codex login --device-auth` and give the operator the
+  printed URL + device code (they only open it and authorize), then run
+  `bash scripts/check-codex.sh`.
 - **Services (must persist beyond your session — `services.sh` uses setsid):**
   `bash scripts/services.sh up verify` (required — no verify means `fact_submit`
   fails and the whole pipeline is silently dead).
@@ -70,7 +69,7 @@ Then ask, as plain text questions:
 
 ## 4. Hand off
 
-Summarize the chosen backend, confirm the system is up, then ask
+Summarize the chosen authentication method, confirm the system is up, then ask
 for the **math problem** (or return to the operator's original request). When they
 give it, write `runtime/projects/<p>/PROBLEM.md` and begin the strategic loop.
 
@@ -84,8 +83,8 @@ voice** (see that folder's `README.md`; a complete paper is produced either way)
   is fine, but record it explicitly. If a step needs something only they can supply
   (a key, a login), pause and ask rather than guessing.
 - **Verify, never claim unchecked.** Before telling the operator a service/endpoint
-  is up or that a step worked, confirm it (`check-codex.sh` exits non-zero on ping
-  failure; `doctor.sh` for the rest). A premature
+  is up or that a step worked, confirm it (`check-codex.sh` checks native Codex
+  authentication; `doctor.sh` checks the rest). A premature
   "it's up" that turns out to be a failure is exactly what to avoid.
 - **Never work on `main`** — branch first if on `main`.
 - **Secrets only in `config/*.env`** — never commit `config/*.env` or `runtime/`;

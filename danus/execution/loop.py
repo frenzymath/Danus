@@ -136,9 +136,6 @@ def run_round(wl: L.WorkerLayout, role: dict, prompt: str, log_path: Path,
     codex_bin = codex.resolve_bin()
     cmd = codex.exec_cmd(
         codex_bin, role["MODEL"], role["REASONING_EFFORT"],
-        # optional per-project worker-only model provider override (opt-in;
-        # empty unless DANUS_PROJECT_<PROJECT>_WORKER_API_* is configured)
-        *codex.project_worker_config_args(wl.project),
         "-C", str(wdir),
         # on an install without .git (tarball download), codex's
         # trusted-directory check refuses to run the worker round
@@ -151,7 +148,7 @@ def run_round(wl: L.WorkerLayout, role: dict, prompt: str, log_path: Path,
             _Child.proc = subprocess.Popen(
                 cmd, stdout=logf, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, cwd=str(wdir),
-                env=codex.subprocess_env(codex_bin, worker_project=wl.project),
+                env=codex.subprocess_env(codex_bin),
             )
         except FileNotFoundError:
             logf.write(f"[worker_loop] codex binary not found: {cmd[0]}\n")

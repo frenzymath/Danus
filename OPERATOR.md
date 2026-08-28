@@ -16,7 +16,7 @@
 
 ## Standing preferences
 - **Notifications:** _(how/where to reach them; what severity warrants a ping)_
-- **Spend ceiling (paid backend API):** _(USD; warn before crossing)_
+- **Spend ceiling (API-key usage):** _(USD; warn before crossing)_
 - **worker roster:** _(default `high:3,xhigh:4` — 3 high + 4 xhigh; asked per project at `danus new`)_
 
 ## Per-project pointers

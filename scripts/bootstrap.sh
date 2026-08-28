@@ -8,12 +8,11 @@
 # runtime/ (gitignored), so the deployment tree stays clean and the whole
 # toolchain is self-contained (no system-wide installs). Provisions:
 #   1) Node 22            -> runtime/node22            (official tarball)
-#   2) Python venv + deps -> runtime/venv             (mcp/fastapi/uvicorn/pydantic/openai/anthropic
+#   2) Python venv + deps -> runtime/venv             (mcp/fastapi/uvicorn/pydantic
 #                                                      + the danus package itself, editable)
 #   3) codex CLI          -> runtime/codex-npm        (npm @openai/codex)
 #   4) node skill deps    -> human-summary/node_modules (markdown-it/katex, soft)
 #   5) writes runtime/runtime.env (machine paths read by scripts/env.sh)
-#   6) if config/codex.env holds a real BYO key, writes the codex model_provider
 # =============================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,7 +49,7 @@ export PATH="$NODE_DIR/bin:$PATH"
 # + imports the deps, and REBUILD it from a fresh base python if not.
 VENV="$RT/venv"
 export PIP_DISABLE_PIP_VERSION_CHECK=1
-DEPS='from danus._mcp import FastMCP; import fastapi,uvicorn,pydantic,openai,anthropic'
+DEPS='from danus._mcp import FastMCP; import fastapi,uvicorn,pydantic'
 if "$VENV/bin/python" -c "$DEPS" 2>/dev/null; then
   log "venv present + healthy"
 else
@@ -58,11 +57,10 @@ else
   PYBASE="$(command -v python3)"; [ -n "$PYBASE" ] || { log "FATAL: no python3 on PATH to build the venv"; exit 1; }
   log "creating venv ($PYBASE) -> $VENV"
   "$PYBASE" -m venv "$VENV"
-  log "installing python deps (mcp/fastapi/uvicorn/pydantic/openai/anthropic)"
+  log "installing python deps (mcp/fastapi/uvicorn/pydantic)"
   $NICE "$VENV/bin/pip" install --quiet --no-cache-dir --upgrade pip >/dev/null 2>&1 || true
   $NICE "$VENV/bin/pip" install --quiet --no-cache-dir \
-    "mcp>=1.0.0" "fastapi>=0.110.0" "uvicorn>=0.30.0" "pydantic>=2.0" "openai>=2.40" \
-    "anthropic>=0.92" \
+    "mcp>=1.0.0" "fastapi>=0.110.0" "uvicorn>=0.30.0" "pydantic>=2.0" \
     || { log "FATAL: pip install failed"; exit 1; }
   "$VENV/bin/python" -c "$DEPS" || { log "FATAL: venv still missing deps after install"; exit 1; }
 fi
@@ -118,22 +116,9 @@ export DANUS_VENV=$VENV
 ENV
 log "wrote $RT/runtime.env"
 
-# --- 6) codex backend = your BYO API key (config/codex.env) ------------------
-# Writes the model_provider into $CODEX_HOME/config.toml (no ChatGPT login).
-# Guard: only if config/codex.env exists with a real (non-placeholder) key.
-. "$DANUS_ROOT/scripts/env.sh" >/dev/null 2>&1 || true
-if [ "${CODEX_BACKEND:-api}" = "api" ] \
-   && [ -n "${DANUS_CODEX_API_KEY:-}" ] && [ -n "${CODEX_API_BASE_URL:-}" ] \
-   && case "$DANUS_CODEX_API_KEY" in *"<"*|*"your"*) false;; *) true;; esac; then
-  bash "$DANUS_ROOT/scripts/setup-codex.sh" api 2>&1 | sed 's/^/[bootstrap] /' \
-    || log "WARN: could not write the codex api provider config"
-else
-  log "codex api provider NOT written — fill config/codex.env (cp config/codex.env.example)"
-  log "  with your BYO endpoint + key, then re-run bootstrap (or: scripts/setup-codex.sh api)"
-fi
-
 log "done. Next:"
 log "  1) cp config/danus.env.example config/danus.env   # and edit (optional)"
-log "  2) cp config/codex.env.example config/codex.env    # fill BYO endpoint + key"
-log "  3) bash scripts/check-codex.sh                     # confirm the codex API is reachable"
+log "  2) use native codex auth: bin/codex login --device-auth"
+log "     or cp config/codex.env.example config/codex.env # standard CODEX_API_KEY"
+log "  3) bash scripts/check-codex.sh                     # confirm authentication"
 log "  4) bash scripts/doctor.sh                          # full health check"

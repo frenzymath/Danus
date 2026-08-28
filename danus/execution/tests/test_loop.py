@@ -102,6 +102,37 @@ def test_run_round_success_rc0(tmp: Path):
     assert rc == 0
 
 
+def test_run_round_leaves_model_provider_to_native_codex(tmp: Path):
+    """Worker runs use Codex's configured provider without Danus injecting one."""
+    wl = _mk_worker(tmp)
+    fake = _write_fake_codex(
+        tmp,
+        "import json, os, sys\n"
+        "print(json.dumps({'argv': sys.argv[1:], "
+        "'worker_key': os.environ.get('DANUS_PROJECT_WORKER_API_KEY')}))\n",
+    )
+    log = wl.dir / "round.log"
+    with _env(
+        DANUS_CODEX_BIN=str(fake),
+        DANUS_PROJECT_PROJ_WORKER_API_PROVIDER="azure",
+        DANUS_PROJECT_PROJ_WORKER_API_BASE_URL="https://example.invalid/openai",
+        DANUS_PROJECT_PROJ_WORKER_API_VERSION="2025-04-01-preview",
+        DANUS_PROJECT_PROJ_WORKER_API_KEY="legacy-secret",
+    ):
+        rc = loop.run_round(
+            wl,
+            {"MODEL": "m", "REASONING_EFFORT": "high"},
+            "prompt",
+            log,
+            hard_timeout=30,
+        )
+
+    assert rc == 0
+    invocation = json.loads(log.read_text())
+    assert not any("model_provider" in arg for arg in invocation["argv"])
+    assert invocation["worker_key"] is None
+
+
 # --- run_round: hard timeout → terminate → 124 ----------------------------- #
 
 def test_run_round_hard_timeout_terminates(tmp: Path):

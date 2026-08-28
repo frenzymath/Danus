@@ -168,64 +168,6 @@ def test_exec_cmd_empty_tail():
     assert cmd == ["codex", "exec", "--model", "m", "--config", 'model_reasoning_effort="e"']
 
 
-# --- per-project worker API override (opt-in, fail-closed) ------------------ #
-
-_PW = {
-    "DANUS_PROJECT_PROJ17_WORKER_API_PROVIDER": None,
-    "DANUS_PROJECT_PROJ17_WORKER_API_BASE_URL": None,
-    "DANUS_PROJECT_PROJ17_WORKER_API_VERSION": None,
-    "DANUS_PROJECT_PROJ17_WORKER_API_KEY": None,
-}
-_PW_FULL = {
-    "DANUS_PROJECT_PROJ17_WORKER_API_PROVIDER": "azure",
-    "DANUS_PROJECT_PROJ17_WORKER_API_BASE_URL": "https://YOUR_RESOURCE.cognitiveservices.azure.com/openai",
-    "DANUS_PROJECT_PROJ17_WORKER_API_VERSION": "2025-04-01-preview",
-    "DANUS_PROJECT_PROJ17_WORKER_API_KEY": "secret-key",
-}
-
-
-def test_project_worker_api_unset_is_noop():
-    # No DANUS_PROJECT_* set → no profile, no extra argv, no injected key. This is
-    # the existing-user path; it must be byte-identical to before the feature.
-    with env(**_PW):
-        assert codex.project_worker_api("Proj17") is None
-        assert codex.project_worker_config_args("Proj17") == []
-        assert "DANUS_PROJECT_WORKER_API_KEY" not in codex.subprocess_env(
-            "/x/bin/codex", worker_project="Proj17")
-
-
-def test_project_worker_api_full_profile_and_injection():
-    with env(**_PW_FULL):
-        p = codex.project_worker_api("Proj17")
-        assert p is not None and p.provider == "azure" and p.api_key == "secret-key"
-        args = codex.project_worker_config_args("Proj17")
-        assert args[:2] == ["--config", 'model_provider="danus_project_worker"']
-        assert any("model_providers.danus_project_worker=" in a for a in args)
-        # the secret enters only via the neutral child env name, never argv
-        assert not any("secret-key" in a for a in args)
-        env_out = codex.subprocess_env("/x/bin/codex", worker_project="Proj17")
-        assert env_out["DANUS_PROJECT_WORKER_API_KEY"] == "secret-key"
-
-
-def test_project_worker_api_partial_fails_closed():
-    partial = {**_PW_FULL, "DANUS_PROJECT_PROJ17_WORKER_API_KEY": None}
-    with env(**partial):
-        try:
-            codex.project_worker_api("Proj17")
-            assert False, "partial profile must raise"
-        except ValueError:
-            pass
-
-
-def test_project_worker_api_rejects_non_azure():
-    with env(**{**_PW_FULL, "DANUS_PROJECT_PROJ17_WORKER_API_PROVIDER": "openai"}):
-        try:
-            codex.project_worker_api("Proj17")
-            assert False, "non-azure provider must raise"
-        except ValueError:
-            pass
-
-
 def main() -> None:
     tests = [
         test_resolve_bin_prefers_danus_codex_bin_over_alias,
@@ -240,10 +182,6 @@ def main() -> None:
         test_exec_cmd_shape_quoted_effort_and_verbatim_tail,
         test_exec_cmd_empty_tail,
         test_model_main_wins_over_codex_alias,
-        test_project_worker_api_unset_is_noop,
-        test_project_worker_api_full_profile_and_injection,
-        test_project_worker_api_partial_fails_closed,
-        test_project_worker_api_rejects_non_azure,
     ]
     for t in tests:
         t()

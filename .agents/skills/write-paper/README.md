@@ -58,12 +58,13 @@ before a run can finish:
   engine (single static binary, downloads packages on demand) into `~/.local/bin`.
   The skill does not install LaTeX for you as part of bootstrap; it is a
   write-paper-only prerequisite.
-- **A codex backend.** The heavy LaTeX drafting, revision, and audit reasoning is delegated to a local
+- **Native Codex access.** The heavy LaTeX drafting, revision, and audit reasoning is delegated to a local
   high-reasoning `codex`, driven by the `write-paper` MCP service (which delegates to
-  the shared `danus.authoring.driver`). Point it at
-  your backend with the `DANUS_CODEX_BIN` / `DANUS_WRITE_PAPER_MODEL` / `DANUS_WRITE_PAPER_EFFORT` environment
-  variables (the per-service model/effort fall back to the neutral `DANUS_MAIN_MODEL` /
-  `DANUS_MAIN_EFFORT`), or have a working `codex` on `PATH`.
+  the shared `danus.authoring.driver`). Authenticate Codex with its stored login or
+  `CODEX_API_KEY`; configure the binary/model/effort with `DANUS_CODEX_BIN` /
+  `DANUS_WRITE_PAPER_MODEL` / `DANUS_WRITE_PAPER_EFFORT` (the per-service
+  model/effort fall back to `DANUS_MAIN_MODEL` / `DANUS_MAIN_EFFORT`), or have a
+  working `codex` on `PATH`.
 - **Network access**, for the reference **verifier** (`reference_verify`). Verifying bibliographic data
   (authors, title, venue, year, arXiv id) against the literature needs to reach the network. The
   reference chain is: the auditor tool flags offline (no tools/network); the verifier tool then
