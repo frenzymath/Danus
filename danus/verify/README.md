@@ -22,7 +22,7 @@ POST /verify
              "repair_hints": str}                # "" iff verdict == "correct"
   400     : vacuous input, or a P1/P3/P5 pre-check match (see prechecks.py)
   422     : request-model validation (empty statement/proof)
-  500     : codex failed / wrote no output / output is not valid JSON / non-dict
+  500     : codex failed / produced no output / output is not valid JSON / non-dict
   504     : codex exec timed out (only if CODEX_TIMEOUT_SECONDS is set)
 
 GET /health -> {"status": "ok", "pid": <int>}    # async; never queues behind /verify
@@ -33,16 +33,17 @@ GET /health -> {"status": "ok", "pid": <int>}    # async; never queues behind /v
 
 **Invariant (enforced by the verifier *prompt*, not this code):**
 `verdict == "correct"` ⟺ `critical_errors == []` **and** `gaps == []`. This service
-returns whatever the agent wrote; it does not recompute the verdict.
+returns the schema-constrained object; it does not recompute the verdict.
 
 ## Modules
 - `prechecks.py` — pure, offline-testable: vacuousness + P1/P3/P5 hard prohibitions
   (all env-toggleable, all purely additive — they can only *reject* more).
 - `launcher.py` — cold-start codex launcher (via the shared `danus.codex`): `codex
   exec --model gpt-5.6-sol --config model_reasoning_effort="xhigh" -C <AGENT_HOME>
-  -c <danus MCP, role=verifier> --dangerously-bypass-approvals-and-sandbox <prompt>`;
-  atomic run-id; reads back `verification.json`. Injects the gateway as **`python
-  -m danus.gateway`**.
+  -c <danus MCP, role=verifier> --dangerously-bypass-approvals-and-sandbox
+  --output-schema <schema> -o <verification.json> <prompt>`; atomic run-id; Codex
+  validates and persists the final response. Injects the gateway as **`python -m
+  danus.gateway`**.
 - `service.py` — FastAPI app (`/verify`, `/health`).
 
 ## Run
@@ -64,7 +65,7 @@ environment.
 | --- | --- | --- |
 | `VERIFY_HOST` / `VERIFY_PORT` (or `PORT`) | `127.0.0.1` / `8091` | bind addr (`python -m danus.verify`) |
 | `VERIFY_AGENT_HOME` | `<this dir>/agent` | the codex `-C` working dir (AGENTS.md + skills) |
-| `VERIFIER_RESULTS_DIR` | `<this dir>/runs` | per-verification run dirs (`log.md` + `verification.json`) |
+| `VERIFIER_RESULTS_DIR` | `<this dir>/runs` | per-verification run dirs (`log.md` + output schema + `verification.json`) |
 | `DANUS_CODEX_BIN` | `<repo>/bin/codex` → `which codex` → bare `"codex"` | the codex binary; resolved via the shared `danus.codex` launcher |
 | `DANUS_VERIFY_MODEL` / `DANUS_VERIFY_EFFORT` (fall back to neutral `DANUS_MAIN_MODEL` / `DANUS_MAIN_EFFORT`, aka `DANUS_CODEX_MODEL` / `DANUS_CODEX_EFFORT`) | `gpt-5.6-sol` / `xhigh` | codex knobs |
 | `CODEX_TIMEOUT_SECONDS` | `0` lib / **`900`** via `python -m danus.verify` | per-verification codex timeout |

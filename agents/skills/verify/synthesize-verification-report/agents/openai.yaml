@@ -1,7 +1,7 @@
 interface:
   display_name: "Synthesize Verification Report"
   short_description: "Build final report and strict verdict"
-  default_prompt: "Use $synthesize-verification-report to aggregate findings, enforce strict verdict logic, self-check the schema, and write verification.json."
+  default_prompt: "Use $synthesize-verification-report to aggregate findings, enforce strict verdict logic, self-check the schema, and return only the final JSON object."
 
 policy:
   allow_implicit_invocation: true

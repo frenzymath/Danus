@@ -1,7 +1,7 @@
 """Offline tests for danus.verify — no codex, no API spend.
 
 Prechecks are pure-function unit-tested; the full request path (pre-checks →
-subprocess spawn → verification.json readback → verdict propagation) is exercised
+schema-constrained subprocess output → verdict propagation) is exercised
 by pointing DANUS_CODEX_BIN at ``fake_codex.py`` (a deterministic stub) and calling the
 ``/verify`` endpoint function directly (avoids an httpx TestClient dependency).
 

@@ -1,11 +1,11 @@
 """Cold-start codex launcher for the verify service.
 
 Each /verify spawns a fresh ``codex exec`` session (the verify agent), driven by
-AGENT_HOME/AGENTS.md + the verify skills, which writes ``verification.json`` to
-the run dir. Stateless. The injected MCP server is ``python -m danus.gateway``
-(installed package, role=verifier); the codex binary + model/effort are resolved
-via the shared ``danus.codex`` launcher (config read at CALL time, so the service
-is testable/reconfigurable).
+AGENT_HOME/AGENTS.md + the verify skills. Codex constrains the final response with
+a JSON schema and writes it to ``verification.json``. Stateless. The injected MCP
+server is ``python -m danus.gateway`` (installed package, role=verifier); the
+codex binary + model/effort are resolved via the shared ``danus.codex`` launcher
+(config read at CALL time, so the service is testable/reconfigurable).
 
 Config (env):
   DANUS_CODEX_BIN,
@@ -33,7 +33,36 @@ from danus import codex
 
 _HERE = Path(__file__).resolve().parent  # danus/verify/
 _REPO_ROOT = _HERE.parent.parent         # repo root (danus/verify -> danus -> root)
-VERIFICATION_FILENAMES = ("verification.json", "verificationt.json")
+VERIFICATION_FILENAME = "verification.json"
+VERIFICATION_SCHEMA_FILENAME = "verification.schema.json"
+_FINDING_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "location": {"type": "string"},
+        "issue": {"type": "string"},
+    },
+    "required": ["location", "issue"],
+}
+VERIFICATION_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "verification_report": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "summary": {"type": "string"},
+                "critical_errors": {"type": "array", "items": _FINDING_SCHEMA},
+                "gaps": {"type": "array", "items": _FINDING_SCHEMA},
+            },
+            "required": ["summary", "critical_errors", "gaps"],
+        },
+        "verdict": {"type": "string", "enum": ["correct", "wrong"]},
+        "repair_hints": {"type": "string"},
+    },
+    "required": ["verification_report", "verdict", "repair_hints"],
+}
 
 
 # --------------------------------------------------------------------------- #
@@ -135,21 +164,26 @@ def _results_dir(run_id: str) -> Path:
 
 
 def _verification_path(run_id: str) -> Optional[Path]:
-    for filename in VERIFICATION_FILENAMES:
-        path = _results_dir(run_id) / filename
-        if path.exists():
-            return path
-    return None
+    path = _results_dir(run_id) / VERIFICATION_FILENAME
+    return path if path.exists() else None
+
+
+def _write_verification_schema(results_dir: Path) -> Path:
+    schema_path = results_dir / VERIFICATION_SCHEMA_FILENAME
+    schema_path.write_text(
+        json.dumps(VERIFICATION_SCHEMA, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return schema_path
 
 
 def build_prompt(run_id: str, statement: str, proof: str) -> str:
-    output_path = _results_dir(run_id) / VERIFICATION_FILENAMES[0]
     return (
         f"Run_id: {run_id}. "
         f"Statement: {statement}. "
         f"Proof:\n{proof}\n\n"
         "Use AGENTS.md to verify the above proof for the statement. "
-        f"Write the verification JSON to this exact path: {output_path}."
+        "Return the verification report as the final JSON object."
     )
 
 
@@ -162,6 +196,8 @@ def build_codex_command(run_id: str, statement: str, proof: str) -> List[str]:
         "--skip-git-repo-check",
         "-c", _mcp_config_arg(),
         "--dangerously-bypass-approvals-and-sandbox",
+        "--output-schema", str(_results_dir(run_id) / VERIFICATION_SCHEMA_FILENAME),
+        "-o", str(_results_dir(run_id) / VERIFICATION_FILENAME),
         build_prompt(run_id=run_id, statement=statement, proof=proof),
     )
 
@@ -174,6 +210,7 @@ def run_codex_verification(run_id: str, statement: str, proof: str) -> Dict[str,
     results_dir = _results_dir(run_id)
     results_dir.mkdir(parents=True, exist_ok=True)
     log_path = results_dir / "log.md"
+    _write_verification_schema(results_dir)
     ensure_agent_home()  # provision the codex -C home on a fresh checkout (idempotent)
     cmd = build_codex_command(run_id=run_id, statement=statement, proof=proof)
     env = codex.subprocess_env(cmd[0])
@@ -199,7 +236,7 @@ def run_codex_verification(run_id: str, statement: str, proof: str) -> Dict[str,
 
     verification_path = _verification_path(run_id)
     if verification_path is None:
-        expected = results_dir / VERIFICATION_FILENAMES[0]
+        expected = results_dir / VERIFICATION_FILENAME
         raise HTTPException(status_code=500,
                             detail=f"verification output was not found at {expected}. See log at {log_path}")
     try:

@@ -2,9 +2,9 @@
 """A stand-in for the `codex` CLI, for PLUMBING tests of the verify service.
 
 The real service cold-starts `codex exec ... <prompt>`; the codex agent reads
-AGENTS.md, judges the proof, and writes verification.json to the path named in
-the prompt. This stub does NOT judge any mathematics -- it only exercises the
-service's subprocess + file-readback + verdict-propagation plumbing
+AGENTS.md and judges the proof; Codex validates the final response and writes it
+to the `-o` path. This stub does NOT judge any mathematics -- it only exercises
+the service's subprocess + file-readback + verdict-propagation plumbing
 deterministically, with no codex install and no API spend.
 
 Verdict rule (deterministic, plumbing only):
@@ -17,7 +17,6 @@ Point the service at it with DANUS_CODEX_BIN=/abs/path/to/fake_codex.py . It acc
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -27,12 +26,14 @@ def main() -> int:
         sys.stderr.write("fake_codex: no prompt argument\n")
         return 2
     prompt = sys.argv[-1]
-
-    m = re.search(r"this exact path:\s*(\S+)", prompt)
-    if not m:
-        sys.stderr.write("fake_codex: could not find output path in prompt\n")
+    if "-o" not in sys.argv or "--output-schema" not in sys.argv:
+        sys.stderr.write("fake_codex: missing structured-output arguments\n")
         return 3
-    out_path = Path(m.group(1).rstrip("."))
+    out_path = Path(sys.argv[sys.argv.index("-o") + 1])
+    schema_path = Path(sys.argv[sys.argv.index("--output-schema") + 1])
+    if not schema_path.is_file():
+        sys.stderr.write("fake_codex: output schema does not exist\n")
+        return 4
 
     if "[[FAKE:wrong]]" in prompt:
         payload = {

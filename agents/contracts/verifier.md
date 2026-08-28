@@ -142,18 +142,15 @@ Repair hints:
 - If verdict is `"correct"`, set `"repair_hints": ""`.
 - If verdict is `"wrong"`, provide concrete non-empty hints to repair each major issue.
 
-### Step 6: Output write and completion
+### Step 6: Final response
 
-Write the final JSON **directly** to the exact output path named in the prompt
-(there is no `write_*` tool — the verify service reads this file back):
-
-- `results/{run_id}/verification.json`
-
-Stop only after this file is written successfully.
+Return the final JSON object as your final response. Do not write files or add
+markdown fences. The Codex CLI validates that response against the service's
+schema and persists it to the run's canonical `verification.json` output.
 
 ## Output JSON Contract
 
-The final response and file content must be:
+The final response must be:
 
 ```json
 {
@@ -179,7 +176,7 @@ If any error or gap exists, `verdict` must be `"wrong"` and `repair_hints` must 
 2. Include every critical error and every gap in the report.
 3. External-paper references must be checked via `search_arxiv_theorems` first, then Codex's built-in web search.
 4. Accept iff there are zero errors and zero gaps.
-5. Persist final JSON to `results/{run_id}/verification.json`.
+5. Emit only the schema-conforming final JSON object; Codex owns persistence.
 6. Use text-only reasoning; never execute mathematical computation.
 
 ## Hard Prohibitions to enforce

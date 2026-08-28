@@ -30,13 +30,9 @@ context. Each issue must include `location` and `issue`.
    - every entry of `critical_errors` and `gaps` has both `location` and `issue`,
    - the verdict is consistent with the rule in step 3 (any critical error or gap forces `"wrong"`).
    If the self-check fails, correct the object before continuing.
-6. Write the final JSON to the run's result file and emit it as your final message.
-   The verify service injects the absolute path for this run — write to
-   `results/{run_id}/verification.json` under the service-provided run directory
-   (`{run_id}` is the `Run_id` given to you). The verify service reads this file
-   back and returns it verbatim as the HTTP `/verify` response; you invoke no MCP
-   tool to persist it. Stop only after the file is written and the same JSON is
-   your final message.
+6. Emit only the final JSON object as your final message. Do not write a file or
+   wrap the object in markdown. The Codex CLI validates the response against the
+   service-provided schema and persists the canonical output for `/verify`.
 
 ## Output Contract
 
@@ -58,9 +54,8 @@ If there is any error or gap, verdict must be `"wrong"` and `repair_hints` must 
 
 ## Tools
 
-- None — you build, self-check, and write the report by reasoning. The final JSON
-  is written to `results/{run_id}/verification.json`; the verify service returns it
-  as the `/verify` response.
+- None — build and self-check the report by reasoning. Codex validates and
+  persists your final JSON response for the verify service.
 
 (The verdict is the verifier's only output — no memory is written; the worker does
 all writing to global memory and the fact graph.)

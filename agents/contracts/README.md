@@ -8,7 +8,7 @@ the binding operating protocol, distinct from the on-demand skills under
 | --- | --- | --- |
 | `main_agent.md` | main agent (Codex, `ultra` effort) | reasons continuously, maintains rolling exploratory subagents, reads global memory + fact graph, writes `master_guidance` / `elaboration`, and orchestrates. NO `fact_submit`. |
 | `worker.md` | codex worker | local memory (private) · global memory (`gm_add` / `gm_search`) · fact graph (`fact_submit`); the adaptive proving loop. Loaded per round via the worker home's `AGENTS.md` symlink. |
-| `verifier.md` | codex verifier (verify service) | judges `{statement, proof}` → strict verdict; called by `fact_submit`; read-only (only `search_arxiv_theorems`); writes its verdict JSON directly to results/{run_id}/verification.json. |
+| `verifier.md` | codex verifier (verify service) | judges `{statement, proof}` → strict verdict; called by `fact_submit`; read-only (only `search_arxiv_theorems`); returns a schema-constrained verdict that Codex persists for the service. |
 
 Codex auto-loads the repo-root `AGENTS.md`; this file expands the same boundaries.
 

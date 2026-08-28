@@ -6,7 +6,7 @@ failure mode) and asserting on the HTTPException status the launcher raises.
 
 Covers:
   * build_codex_command: exec prefix, -C home, -c gateway injection, sandbox flag,
-    output path in the prompt, bin resolved via danus.codex.
+    schema-constrained output path, bin resolved via danus.codex.
   * subprocess_env: PATH-prepend for a concrete path; NO cwd injection for bare
     "codex".
   * _allocate_run_id: unique-dir retry on collision (FileExistsError branch).
@@ -60,14 +60,18 @@ def _write_stub(dirpath: Path, name: str, body: str) -> Path:
     return p
 
 
-# stub that writes a valid verification.json to the prompt's output path
+# stub that behaves like ``codex exec -o`` and checks its schema input exists
 _STUB_OK = """\
-import re, sys, json
+import sys, json
 from pathlib import Path
-prompt = sys.argv[-1]
-out = Path(re.search(r'this exact path:\\s*(\\S+)', prompt).group(1).rstrip('.'))
+schema = Path(sys.argv[sys.argv.index('--output-schema') + 1])
+assert schema.is_file()
+contract = json.loads(schema.read_text())
+assert set(contract['required']) == {'verification_report', 'verdict', 'repair_hints'}
+out = Path(sys.argv[sys.argv.index('-o') + 1])
 out.parent.mkdir(parents=True, exist_ok=True)
-out.write_text(json.dumps({"verification_report": {"critical_errors": []},
+out.write_text(json.dumps({"verification_report": {"summary": "valid",
+                                                    "critical_errors": [], "gaps": []},
                            "verdict": "correct", "repair_hints": ""}))
 print("ok")
 """
@@ -80,20 +84,18 @@ _STUB_NOOUT = "print('did nothing')\n"
 
 # stub that writes invalid JSON
 _STUB_BADJSON = """\
-import re, sys
+import sys
 from pathlib import Path
-prompt = sys.argv[-1]
-out = Path(re.search(r'this exact path:\\s*(\\S+)', prompt).group(1).rstrip('.'))
+out = Path(sys.argv[sys.argv.index('-o') + 1])
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text("{ this is not json ")
 """
 
 # stub that writes valid JSON that is NOT an object (a list)
 _STUB_NONDICT = """\
-import re, sys, json
+import sys, json
 from pathlib import Path
-prompt = sys.argv[-1]
-out = Path(re.search(r'this exact path:\\s*(\\S+)', prompt).group(1).rstrip('.'))
+out = Path(sys.argv[sys.argv.index('-o') + 1])
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps(["not", "a", "dict"]))
 """
@@ -124,6 +126,7 @@ def test_build_codex_command_shape():
     with tempfile.TemporaryDirectory() as tmp:
         with _env(DANUS_CODEX_BIN="/abs/codex",
                   VERIFY_AGENT_HOME=str(tmp),
+                  VERIFIER_RESULTS_DIR=str(Path(tmp) / "runs"),
                   DANUS_VERIFY_MODEL="m-test", DANUS_VERIFY_EFFORT="e-test",
                   DANUS_CODEX_MODEL=None, DANUS_CODEX_EFFORT=None):
             cmd = launcher.build_codex_command("RID", _STMT, _PROOF)
@@ -135,8 +138,13 @@ def test_build_codex_command_shape():
     assert "-c" in cmd
     assert any('mcp_servers.danus=' in a and 'DANUS_ROLE="verifier"' in a for a in cmd)
     assert "--dangerously-bypass-approvals-and-sandbox" in cmd
-    # the prompt (final arg) names the exact output path
-    assert cmd[-1].endswith("verification.json.")
+    output_path = Path(cmd[cmd.index("-o") + 1])
+    schema_path = Path(cmd[cmd.index("--output-schema") + 1])
+    assert output_path.name == "verification.json"
+    assert schema_path.name == "verification.schema.json"
+    assert output_path.parent == schema_path.parent
+    # Codex owns output persistence; the verifier only returns the JSON object.
+    assert "exact path" not in cmd[-1]
     assert "Run_id: RID" in cmd[-1] and _STMT in cmd[-1]
 
 
@@ -190,12 +198,11 @@ def test_verification_path_found_and_absent():
             d = launcher._results_dir(rid)
             d.mkdir(parents=True)
             assert launcher._verification_path(rid) is None  # nothing yet
-            (d / launcher.VERIFICATION_FILENAMES[1]).write_text("{}")
-            # the alternate filename is also recognized
-            assert launcher._verification_path(rid).name == launcher.VERIFICATION_FILENAMES[1]
-            (d / launcher.VERIFICATION_FILENAMES[0]).write_text("{}")
-            # primary filename takes precedence
-            assert launcher._verification_path(rid).name == launcher.VERIFICATION_FILENAMES[0]
+            (d / "verificationt.json").write_text("{}")
+            # Codex owns one canonical output path; typo-compatible fallbacks are gone.
+            assert launcher._verification_path(rid) is None
+            (d / launcher.VERIFICATION_FILENAME).write_text("{}")
+            assert launcher._verification_path(rid).name == launcher.VERIFICATION_FILENAME
 
 
 # --------------------------------------------------------------------------- #
