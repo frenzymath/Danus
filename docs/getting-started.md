@@ -6,7 +6,7 @@ state. Read `concepts.md` first for the mental model; after this, see
 
 ## Prerequisites (on the host)
 
-- **Linux** host you are willing to let autonomous agents operate on (a dedicated
+- **Linux or macOS** host you are willing to let autonomous agents operate on (a dedicated
   VM / container / pod — see `security-and-trust.md`).
 - `git`, `python3` (3.10+), `curl`, `tar`, `bash`. `bootstrap.sh` provisions
   everything else (Node, a venv, the codex CLI) into `runtime/` — no system-wide
@@ -55,6 +55,10 @@ Then pick your **codex backend** (workers + verifier):
   stored in a config file.
 - **ChatGPT subscription:** in `config/danus.env` set `CODEX_BACKEND=chatgpt`, then
   `bash scripts/setup-codex.sh login` and follow the device-auth flow.
+  To keep a personal account separate from another Codex session, explicitly set
+  `CODEX_HOME="$DANUS_ROOT/runtime/codex-home"` in `config/danus.env` before login;
+  otherwise an inherited `CODEX_HOME` takes precedence over the default. Sign in
+  with the intended personal account. This does not override managed host policies.
 
 The main agent steers the swarm by reasoning itself between rounds (optionally via
 exploratory codex subagents) — there is no separate strategy transport or API key
@@ -81,7 +85,7 @@ bash scripts/services.sh up verify
 ```
 
 **Without the verify service, `fact_submit` fails and no facts are ever produced.**
-`services.sh` `setsid`-detaches it so it survives your shell. See `operations.md`.
+`services.sh` detaches it into its own session so it survives your shell. See `operations.md`.
 
 ## 5. Health check
 
@@ -118,6 +122,22 @@ On the **api** backend the two codex lines instead read `codex backend: api prov
 configured` + `codex API live ping ok`.
 
 ## 6. Connect codex and initialize
+
+To use **Codex Desktop as the main agent on macOS**, first quit the app if it is
+already running. From this repository directory, start a Bash shell, source the
+Danus environment, and then launch the app:
+
+```bash
+bash
+source scripts/env.sh
+open -a ChatGPT
+```
+
+In the app, open this repository directory and set the main agent's permissions
+to **Full Access**. Workers and the verifier still run through non-interactive
+Codex CLI processes. Source the environment before each fresh app launch so the
+Danus paths and account configuration are available; opening an already-running
+app does not refresh its environment.
 
 Connect codex **rooted at this repo directory** (so `AGENTS.md`, `.codex/config.toml`,
 and `.agents/skills/` load). On the **first** session, the main agent runs the

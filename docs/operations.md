@@ -11,7 +11,7 @@ recovery after a restart, and unattended-operation helpers.
 
 ## The persistent services
 
-Two services must be managed via `scripts/services.sh`, which `setsid`-detaches each
+Two services must be managed via `scripts/services.sh`, which detaches each into its own session
 so it **survives your shell / SSH session ending** (a bare `&` would die with the
 shell). Start them only this way.
 

@@ -21,6 +21,11 @@ DANUS_ROOT="$(cd "$HERE/.." && pwd)"
 RT="$DANUS_ROOT/runtime"
 NODE_VERSION="${NODE_VERSION:-v22.14.0}"
 ARCH="$(uname -m)"; case "$ARCH" in x86_64) NARCH=x64;; aarch64|arm64) NARCH=arm64;; *) NARCH=x64;; esac
+case "$(uname -s)" in
+  Linux) NODE_OS=linux;;
+  Darwin) NODE_OS=darwin;;
+  *) echo "[bootstrap] unsupported OS: $(uname -s)" >&2; exit 1;;
+esac
 mkdir -p "$RT/logs"
 log(){ printf '[bootstrap] %s\n' "$*"; }
 
@@ -33,11 +38,11 @@ if [ -x "$NODE_DIR/bin/node" ]; then
   log "node present: $("$NODE_DIR/bin/node" --version)"
 else
   log "installing Node $NODE_VERSION ($NARCH) -> $NODE_DIR"
-  TARBALL="node-$NODE_VERSION-linux-$NARCH.tar.xz"
+  TARBALL="node-$NODE_VERSION-$NODE_OS-$NARCH.tar.gz"
   $NICE curl -fsSL "https://nodejs.org/dist/$NODE_VERSION/$TARBALL" -o "$RT/$TARBALL" || true
   [ -s "$RT/$TARBALL" ] || { log "FATAL: could not download node (set NODE_VERSION / check network)"; exit 1; }
   mkdir -p "$NODE_DIR"
-  tar -xJf "$RT/$TARBALL" -C "$NODE_DIR" --strip-components=1
+  tar -xzf "$RT/$TARBALL" -C "$NODE_DIR" --strip-components=1
   rm -f "$RT/$TARBALL"
   log "node installed: $("$NODE_DIR/bin/node" --version)"
 fi

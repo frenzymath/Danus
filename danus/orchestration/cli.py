@@ -26,6 +26,8 @@ import fcntl
 import json
 import os
 import signal
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -63,7 +65,18 @@ def _alive(pid: Optional[int]) -> bool:
     except PermissionError:
         return True  # exists but not ours
     # The pid exists — but a zombie (killed, not yet reaped by its parent) is
-    # effectively dead. Linux /proc tells us the process state.
+    # effectively dead. macOS has no /proc; ps supplies the same state.
+    if sys.platform == "darwin":
+        try:
+            result = subprocess.run(["/bin/ps", "-o", "stat=", "-p", str(pid)],
+                                    capture_output=True, text=True, check=False)
+            state = result.stdout.strip()
+            if state:
+                return not state.startswith("Z")
+            return result.returncode != 1  # ps returns 1 when the pid is gone
+        except OSError:
+            return True  # unable to inspect; conservatively retain liveness
+    # Linux /proc tells us the process state.
     try:
         stat = Path(f"/proc/{pid}/stat").read_text()
         state = stat.rsplit(")", 1)[1].split()[0]  # field after "(comm)"

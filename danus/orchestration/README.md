@@ -25,7 +25,7 @@ danus/orchestration/
 
 ## Notes
 
-- Liveness is **zombie-aware** (`os.kill(pid,0)` + a `/proc/<pid>/stat` Z-state
+- Liveness is **zombie-aware** (`os.kill(pid,0)` + a `/proc/<pid>/stat` (Linux) or `ps` (macOS) Z-state
   check), so `status`/`list` don't lie and `start` can restart a crashed worker.
 - No `assign`-all, no pause/resume — restart = `stop` then `start`.
 - Touches core only indirectly: `new` creates the empty `global_memory/`/`fact_graph/`

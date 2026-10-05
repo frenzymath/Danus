@@ -1,10 +1,10 @@
-"""Offline, fully-mocked coverage of every ``danus`` CLI verb + helper.
+"""Offline coverage of every ``danus`` CLI verb + helper.
 
 Unlike ``test_orchestration.py`` (which spawns the real loop subprocess with a
-stub codex), this module never launches *any* process: ``spawn_loop`` is
-monkeypatched to a recording fake, so ``do_start`` / ``main start`` exercise the
-flock + pid bookkeeping without a fork. Everything runs under a tempdir agents
-root. Targets the read helpers, the error/edge paths of each verb, the two text
+stub codex), this module mocks ``spawn_loop``: ``do_start`` / ``main start``
+exercise the flock + pid bookkeeping without launching workers. Process-lifecycle
+tests use real test-owned children, never Codex. Project state lives under a
+temporary agents root. Targets the read helpers, the error/edge paths of each verb, the two text
 formatters, the ``_task_from_args`` source selection, ``build_parser``, and the
 full ``main`` dispatch table — plus ``python -m danus.orchestration`` via runpy.
 
@@ -157,6 +157,9 @@ def test_stop_one_force_sigkill_fallback(tmp: Path):
             res = cli._stop_one(wl, force=True)       # SIGTERM ignored -> SIGKILL fallback
             assert res == "killed"
             assert time.time() - t0 >= 4.5, "should have waited the full SIGTERM grace"
+            # Collect the exit status of our child before checking it is gone.
+            # Zombie detection is covered separately by test_alive_zombie_is_dead.
+            proc.wait(timeout=5)
             # confirm it's really gone
             end = time.time() + 5
             while time.time() < end and cli._alive(proc.pid):
@@ -283,29 +286,40 @@ def test_alive_permission_error_means_alive():
 
 
 def test_alive_zombie_is_dead():
-    """A child that exited but hasn't been reaped is a zombie; /proc reports state
-    'Z' and ``_alive`` must call it dead. We fork a child that exits immediately
-    and do NOT wait() it, so it lingers as a zombie we own."""
+    """A real exited, unreaped child must be detected as dead on Linux and macOS."""
     import subprocess
+    import sys
     import time
-    # 'true' exits at once; without wait() it becomes a zombie child of us.
-    proc = subprocess.Popen(["true"])
+
+    proc = subprocess.Popen([sys.executable, "-c", "pass"])
     try:
-        # wait for the kernel to mark it Z (exited, unreaped)
         pid = proc.pid
+
         def is_zombie():
+            if sys.platform == "darwin":
+                # Inspect the real process. Permission or command failures must
+                # fail the test rather than substitute a simulated process state.
+                result = subprocess.run(
+                    ["/bin/ps", "-o", "stat=", "-p", str(pid)],
+                    capture_output=True, text=True, check=True, timeout=5,
+                )
+                return result.stdout.strip().startswith("Z")
             try:
                 stat = Path(f"/proc/{pid}/stat").read_text()
                 return stat.rsplit(")", 1)[1].split()[0] == "Z"
             except (OSError, IndexError):
                 return False
-        end = time.time() + 5
-        while time.time() < end and not is_zombie():
+
+        # Do not poll() or wait() here: either can reap the child, removing the
+        # zombie before _alive has a chance to inspect it.
+        end = time.monotonic() + 5
+        while not is_zombie():
+            assert time.monotonic() < end, "child did not become a zombie"
             time.sleep(0.02)
-        assert is_zombie(), "child did not become a zombie"
-        assert cli._alive(pid) is False              # /proc state 'Z' => dead
+        os.kill(pid, 0)  # The pid still exists; death must be detected by state.
+        assert cli._alive(pid) is False
     finally:
-        proc.wait()                                   # reap it
+        proc.wait(timeout=5)  # Reap our child even if inspection or assertion fails.
 
 
 # --------------------------------------------------------------------------- #
