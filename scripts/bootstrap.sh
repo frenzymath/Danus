@@ -46,21 +46,27 @@ export PATH="$NODE_DIR/bin:$PATH"
 # --- 2) Python venv + deps --------------------------------------------------
 # A venv's base interpreter is referenced by absolute path (pyvenv.cfg `home`).
 # If that base interpreter ever moves or is removed, the venv can't run even
-# though its site-packages survive. So VALIDATE that the venv actually executes
-# + imports the deps, and REBUILD it from a fresh base python if not.
+# though its site-packages survive. Moving the checkout also leaves absolute
+# paths in activation and console scripts. Validate both location and imports;
+# rebuild a relocated venv even when the old checkout still exists.
 VENV="$RT/venv"
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 DEPS='from danus._mcp import FastMCP; import fastapi,uvicorn,pydantic,openai,anthropic'
-if "$VENV/bin/python" -c "$DEPS" 2>/dev/null; then
+# Activation records the creation path even when Python itself still runs.
+VENV_LOCATION="$( ( . "$VENV/bin/activate" && printf '%s' "$VIRTUAL_ENV" ) 2>/dev/null || true)"
+if [ "$VENV_LOCATION" = "$VENV" ] && "$VENV/bin/python" -c "$DEPS" 2>/dev/null; then
   log "venv present + healthy"
 else
-  [ -e "$VENV" ] && { log "venv missing/broken (dangling base interpreter?) — rebuilding"; rm -rf "$VENV"; }
-  PYBASE="$(command -v python3)"; [ -n "$PYBASE" ] || { log "FATAL: no python3 on PATH to build the venv"; exit 1; }
+  # Resolve the base BEFORE deleting anything: PATH may contain this venv.
+  PYBASE="$(python3 -c 'import sys; print(sys._base_executable)' 2>/dev/null || true)"
+  [ -n "$PYBASE" ] && [ -x "$PYBASE" ] || { log "FATAL: no working base python3 to build the venv"; exit 1; }
+  case "$PYBASE" in "$VENV"/*) log "FATAL: base Python is inside the venv to rebuild"; exit 1;; esac
+  [ -e "$VENV" ] && { log "venv missing/broken or relocated — rebuilding"; rm -rf "$VENV"; }
   log "creating venv ($PYBASE) -> $VENV"
   "$PYBASE" -m venv "$VENV"
   log "installing python deps (mcp/fastapi/uvicorn/pydantic/openai/anthropic)"
-  $NICE "$VENV/bin/pip" install --quiet --no-cache-dir --upgrade pip >/dev/null 2>&1 || true
-  $NICE "$VENV/bin/pip" install --quiet --no-cache-dir \
+  $NICE "$VENV/bin/python" -m pip install --quiet --no-cache-dir --upgrade pip >/dev/null 2>&1 || true
+  $NICE "$VENV/bin/python" -m pip install --quiet --no-cache-dir \
     "mcp>=1.0.0" "fastapi>=0.110.0" "uvicorn>=0.30.0" "pydantic>=2.0" "openai>=2.40" \
     "anthropic>=0.92" \
     || { log "FATAL: pip install failed"; exit 1; }
@@ -73,14 +79,20 @@ fi
 # package must live on the venv's sys.path — cwd-on-sys.path only helps at the
 # repo root. Editable, so a `git pull` needs no re-install. Validate from a
 # neutral cwd: at the repo root a missing install is masked (cwd is sys.path[0]).
-if (cd / && "$VENV/bin/python" -c 'import danus' 2>/dev/null); then
+danus_install_is_current(){
+  (cd / && env -u PYTHONPATH "$VENV/bin/python" -c '
+import pathlib, sys, danus
+sys.exit(pathlib.Path(danus.__file__).resolve() != (pathlib.Path(sys.argv[1]) / "danus/__init__.py").resolve())
+' "$DANUS_ROOT")
+}
+if danus_install_is_current 2>/dev/null; then
   log "danus package present in venv"
 else
   log "installing the danus package (editable) into the venv"
-  $NICE "$VENV/bin/pip" install --quiet --no-cache-dir -e "$DANUS_ROOT" \
+  $NICE "$VENV/bin/python" -m pip install --quiet --no-cache-dir -e "$DANUS_ROOT" \
     || { log "FATAL: pip install -e failed (the danus package)"; exit 1; }
-  (cd / && "$VENV/bin/python" -c 'import danus') \
-    || { log "FATAL: danus still not importable after editable install"; exit 1; }
+  danus_install_is_current \
+    || { log "FATAL: danus does not resolve to this checkout after editable install"; exit 1; }
 fi
 
 # --- 3) codex CLI (npm @openai/codex) --------------------------------------
