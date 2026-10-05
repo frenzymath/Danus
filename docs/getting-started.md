@@ -1,6 +1,6 @@
 # Danus — Getting Started
 
-Provision a self-contained Danus deployment and bring it to a healthy, ready-to-run
+Set up a Danus deployment and bring it to a healthy, ready-to-run
 state. Read `concepts.md` first for the mental model; after this, see
 `operating-guide.md` to run your first project.
 
@@ -9,8 +9,8 @@ state. Read `concepts.md` first for the mental model; after this, see
 - **Linux** host you are willing to let autonomous agents operate on (a dedicated
   VM / container / pod — see `security-and-trust.md`).
 - `git`, `python3` (3.10+), `curl`, `tar`, `bash`. `bootstrap.sh` provisions
-  everything else (Node, a venv, the codex CLI) into `runtime/` — no system-wide
-  installs.
+  a venv and any missing Node/npm or Codex CLI into `runtime/`. Working host
+  installations are reused; there are no system-wide installs.
 - A **codex backend**: either an OpenAI-compatible API key, or a ChatGPT Pro/Plus
   subscription. This is what workers and the verifier run on (bring your own).
 - *(Only for `write-paper`)* a LaTeX engine on `PATH` (`pdflatex`, or `tectonic` via
@@ -22,16 +22,26 @@ state. Read `concepts.md` first for the mental model; after this, see
 bash scripts/bootstrap.sh
 ```
 
-Idempotent. Installs into gitignored `runtime/`:
-- Node 22 → `runtime/node22` (default `NODE_VERSION` `v22.14.0`),
+Idempotent. Prefers existing tools on `PATH`, including on reruns after sourcing
+`scripts/env.sh`. It skips Danus's own wrapper and bundled tools during host
+detection, and prints the selected paths and versions:
+- Working Node (version 16 or newer) and npm are reused. Otherwise, Node 22 is
+  provisioned into `runtime/node22` (default `NODE_VERSION` `v22.14.0`).
 - a Python venv → `runtime/venv` (`mcp`, `fastapi`, `uvicorn`, `pydantic`, `openai`,
   plus the `danus` package itself as an editable install — the worker MCP gateway
   and the `bin/` wrappers run `python -m danus.*` from arbitrary cwds, so the
   package must be on the venv's path; the script validates the venv actually
   imports everything and rebuilds if the base interpreter went dangling),
-- the codex CLI → `runtime/codex-npm` (`npm @openai/codex`),
+- A working `codex` executable on `PATH` is reused (checked with `--version`).
+  Otherwise, the local CLI in `runtime/codex-npm` is reused or installed with
+  `npm @openai/codex`. This check does not validate API access.
 - human-summary node deps (`markdown-it`/`katex`, soft — only for PDF rendering),
 - `runtime/runtime.env` (machine paths that `scripts/env.sh` reads).
+
+The selected executable paths are saved in `runtime/runtime.env`. Paths with
+spaces are supported. Reusing Codex does not change Danus's separate default
+`CODEX_HOME` (`runtime/codex-home`). Previously installed local tools are left in
+place; rerunning bootstrap selects host tools when available.
 
 If `config/codex.env` already holds a real (non-placeholder) API key, bootstrap
 also writes the codex `model_provider` for you.

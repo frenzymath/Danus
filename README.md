@@ -109,7 +109,7 @@ examples/              unattended-ops examples + a toy project
 ## Quickstart
 
 ```bash
-# 1. provision the toolchain (Node + venv + codex CLI) into runtime/
+# 1. reuse existing Node/Codex; provision missing tools and a venv locally
 bash scripts/bootstrap.sh
 
 # 2. configure — copy the templates and fill in YOUR keys (never committed)

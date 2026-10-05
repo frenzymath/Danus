@@ -5,7 +5,7 @@
 #   source <repo>/scripts/env.sh
 #
 # Resolves all paths from config/codex.env + config/danus.env + runtime/
-# runtime.env, then exports sane defaults and puts bin/ + the provisioned node +
+# runtime.env, then exports sane defaults and puts bin/ + the selected node +
 # venv on PATH. The bin/ wrappers source this for you, so `danus` and `codex`
 # work without you sourcing it manually. Sourcing twice is harmless
 # (idempotent).
@@ -25,7 +25,7 @@ if [ -f "$DANUS_ROOT/config/danus.env" ]; then
   set -a; . "$DANUS_ROOT/config/danus.env"; set +a
 fi
 
-# 2) machine-derived paths written by bootstrap.sh (node, codex.js, venv)
+# 2) machine-derived paths written by bootstrap.sh (node, Codex executable or codex.js, venv)
 if [ -f "$DANUS_ROOT/runtime/runtime.env" ]; then
   set -a; . "$DANUS_ROOT/runtime/runtime.env"; set +a
 fi
@@ -48,7 +48,7 @@ export DANUS_CODEX_EFFORT="$DANUS_MAIN_EFFORT"
 export DANUS_CHROME_BIN="${DANUS_CHROME_BIN:-}"        # headless Chrome/Chromium for human-summary PDF (empty = auto-detect)
 export CODEX_BACKEND="${CODEX_BACKEND:-api}"            # api (BYO key) | chatgpt (your login)
 
-# 4) PATH: bin wrappers first, then the provisioned node + venv (if bootstrapped)
+# 4) PATH: bin wrappers first, then the selected node + venv (if bootstrapped)
 _danus_path="$DANUS_ROOT/bin"
 [ -n "${DANUS_NODE_BIN:-}" ] && [ -d "$DANUS_NODE_BIN" ] && _danus_path="$_danus_path:$DANUS_NODE_BIN"
 [ -n "${DANUS_VENV:-}" ]     && [ -d "$DANUS_VENV/bin" ] && _danus_path="$_danus_path:$DANUS_VENV/bin"
